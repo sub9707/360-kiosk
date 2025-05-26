@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Home.module.scss';
 
-import sample from '/src/assets/videos/sample-background.mp4';
+import sample from '/src/renderer/assets/videos/sample-background.mp4';
 import { Link } from 'react-router-dom';
 
 const Home: React.FC = () => {
