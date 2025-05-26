@@ -23,7 +23,7 @@ const Home: React.FC = () => {
                         <h1>빙글빙글 카메라<br/>키오스크</h1>
                         <p>빙글빙글 도는 카메라로 촬영하고 <br/>편집 영상을 확인해보세요</p>
                     </div>
-                    <Link to={'/about'} className={styles.startBtn}>시작하기</Link>
+                    <Link to={'/film'} className={styles.startBtn}>시작하기</Link>
                 </div>
             </div>
             <footer className={styles.footer}>
