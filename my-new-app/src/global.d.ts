@@ -1,1 +1,11 @@
 declare module 'electron-squirrel-startup';
+
+declare module "*.scss" {
+  const content: { [className: string]: string };
+  export = content;
+}
+
+declare module '*.mp4' {
+  const src: string;
+  export default src;
+}
