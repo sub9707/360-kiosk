@@ -59,22 +59,3 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-
-// 카메라 제어 코드 (IPC)
-
-// 카메라 연결 시도
-ipcMain.on("camera-connect", (event) => {
-  console.log("[Main] 카메라 연결 중");
-
-  // 연결 시도 로직 - 예시로 성공 처리
-  const isConnected = true; // 여기에 실제 연결 로직 구현
-
-  event.sender.send("camera-connect-reply", isConnected);
-});
-
-// 녹화 시작 요청 처리
-ipcMain.on("camera-record-start", (event) => {
-  console.log("[Main] 카메라 녹화 시작");
-  // 녹화 시작 로직 구현 필요
-  event.sender.send("camera-record-start-reply", "started");
-});
