@@ -55,6 +55,7 @@
             .titleBox {
                 text-align: center;
                 user-select: none;
+
                 h1 {
                     color: white;
                     text-align: center;
@@ -101,6 +102,23 @@
                 }
             }
 
+        }
+    }
+
+    .logo {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+
+        img {
+            filter: invert(1);
+            width: 12rem;
         }
     }
 

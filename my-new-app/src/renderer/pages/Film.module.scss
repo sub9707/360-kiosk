@@ -3,15 +3,17 @@
     height: 100%;
     background: #513973;
     background: radial-gradient(circle, rgba(81, 57, 115, 1) 0%, rgba(33, 33, 43, 1) 100%);
-    position:relative;
+    position: relative;
+
     .menubar {
         width: 100%;
         height: 5rem;
         background-color: rgba(0, 0, 0, 0.425);
         position: fixed;
         top: 0;
-        left:0;
+        left: 0;
         z-index: 10;
+
         .menubarWrapper {
             width: 100%;
             height: 5rem;
@@ -34,7 +36,8 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                img{
+
+                img {
                     width: 70%;
                     height: 70%;
                 }
@@ -50,58 +53,247 @@
             }
         }
     }
-    .instruction{
+
+    .instruction {
         position: absolute;
-        top:50%;
-        left:50%;
+        top: 50%;
+        left: 50%;
         transform: translate(-50%, -50%);
         width: 100%;
-        .instructionWrapper{
+
+        .instructionWrapper {
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            p{
-                color:white;
+
+            p {
+                color: white;
                 font-size: 5rem;
                 text-align: center;
             }
-            button{
+
+            button {
                 background-color: transparent;
                 border: white solid 8px;
                 border-radius: 8px;
                 width: 30rem;
                 height: 10rem;
-                color:white;
+                color: white;
                 font-size: 4rem;
                 font-weight: 700;
+                cursor: pointer;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    transform: scale(1.02);
+                }
+
+                &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
+                }
             }
-            .filmInProgress, .filmComplete{
+
+            // 스피너 애니메이션
+            .spinner {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 3rem;
+            }
+
+            .spinnerRing {
+                width: 8rem;
+                height: 8rem;
+                border: 8px solid rgba(255, 255, 255, 0.2);
+                border-top: 8px solid aqua;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            // 연결중 상태 스타일
+            .connectingStatus {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                
+                p {
+                    margin: 0;
+                    font-size: 4rem;
+                    color: white;
+                    font-weight: 500;
+                }
+            }
+
+            // 연결 에러 상태 스타일
+            .connectError {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 3rem;
+                
+                p {
+                    margin: 0;
+                    font-size: 4rem;
+                    color: #ff6b6b;
+                    font-weight: 500;
+                }
+                
+                button {
+                    background-color: transparent;
+                    border: #ff6b6b solid 6px;
+                    border-radius: 8px;
+                    width: 30rem;
+                    height: 10rem;
+                    color: #ff6b6b;
+                    font-size: 3.5rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    
+                    &:hover {
+                        background-color: rgba(255, 107, 107, 0.1);
+                        transform: scale(1.02);
+                    }
+                    
+                    &:active {
+                        background-color: rgba(255, 107, 107, 0.2);
+                    }
+                }
+            }
+
+            // 편집중 상태 스타일
+            .editingStatus {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                margin-bottom: 3rem;
+                
+                p {
+                    margin: 0;
+                    font-size: 4rem;
+                    color: white;
+                    font-weight: 500;
+                }
+            }
+
+            .filmInProgress,
+            .filmComplete {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                button{
+
+                button {
                     margin-bottom: 3rem;
+                }
+            }
+
+            .filmInProgress {
+                .progressSection {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    margin: 3rem 0;
+                    width: 100%;
+                    max-width: 50rem;
+
+                    .timeDisplay {
+                        font-size: 3rem;
+                        font-weight: bold;
+                        margin-bottom: 2rem;
+                        text-shadow: 0 0 20px currentColor;
+                        transition: color 0.3s ease;
+                    }
+
+                    .progressBarContainer {
+                        width: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 1rem;
+
+                        .progressBarBg {
+                            width: 100%;
+                            height: 1.5rem;
+                            background: rgba(255, 255, 255, 0.2);
+                            border-radius: 1rem;
+                            overflow: hidden;
+                            backdrop-filter: blur(10px);
+                            border: 2px solid rgba(255, 255, 255, 0.3);
+                            box-shadow:
+                                inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                                0 4px 20px rgba(0, 0, 0, 0.2);
+
+                            .progressBar {
+                                height: 100%;
+                                border-radius: 1rem;
+                                transition: all 1s linear;
+                                position: relative;
+                                overflow: hidden;
+
+                                .progressShine {
+                                    position: absolute;
+                                    top: 0;
+                                    left: -100%;
+                                    width: 100%;
+                                    height: 100%;
+                                    background: linear-gradient(90deg,
+                                            transparent,
+                                            rgba(255, 255, 255, 0.4),
+                                            transparent);
+                                    animation: shine 2s infinite;
+                                }
+                            }
+                        }
+
+                        .progressPercent {
+                            color: rgba(255, 255, 255, 0.8);
+                            font-size: 1.8rem;
+                            font-weight: 600;
+                            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+                        }
+                    }
                 }
             }
         }
     }
-    .logo{
-        position:fixed;
-        bottom:0;
-        left:0;
+
+    .logo {
+        position: fixed;
+        bottom: 0;
+        left: 0;
         width: 100%;
         height: 7rem;
-        background-color: rgba(0, 0, 0, 0.425);
         display: flex;
         align-items: center;
         justify-content: center;
-        .logoName{
-            color: white;
-            font-size: 3rem;
-            text-align: center;
+
+        img {
+            filter: invert(1);
+            width: 12rem;
         }
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes shine {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
     }
 }

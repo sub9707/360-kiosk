@@ -3,36 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 
-// 원본 영상 저장
-ipcMain.handle('save-video-to-local', async (_event) => {
-  try {
-    // 현재 날짜/시간
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
-
-    const folderPath = `F:/videos/original/${dateStr}`;
-    const fileName = `${dateStr}${timeStr}.mp4`;
-    const fullPath = path.join(folderPath, fileName);
-
-    // 디렉토리 생성 (없으면)
-    if (!fs.existsSync(folderPath)) {
-      fs.mkdirSync(folderPath, { recursive: true });
-    }
-
-    // 임시 샘플 파일 경로
-    const sourcePath = path.resolve(__dirname, '../../src/renderer/assets/videos/sample-background.mp4');
-
-    // 파일 복사
-    fs.copyFileSync(sourcePath, fullPath);
-
-    return { success: true, path: fullPath };
-  } catch (error) {
-    console.error('영상 저장 중 오류 발생:', error);
-    return { success: false, error: error.message };
-  }
-});
-
 // 영상 구간 편집 [ffmpeg]
 ipcMain.handle('edit-video', async (_event, inputPath: string) => {
   try {
@@ -46,7 +16,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       + `[0:v]trim=2:6,setpts=(PTS-STARTPTS)/3[v1]; `
       + `[0:v]trim=6:8,setpts=PTS-STARTPTS[v2]; `
       + `[0:v]trim=8:12,setpts=(PTS-STARTPTS)/3[v3]; `
-      + `[0:v]trim=12,setpts=PTS-STARTPTS[v4]; `
+      + `[0:v]trim=15:9999,setpts=PTS-STARTPTS[v4]; `
       + `[v0][v1][v2][v3][v4]concat=n=5:v=1:a=0[outv]" `
       + `-map "[outv]" "${outputPath}"`;
 
@@ -70,6 +40,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     return { success: false, error: error.message };
   }
 });
+
 
 // 가장 최근 영상 찾기
 ipcMain.handle('find-latest-video', async (_event) => {
@@ -95,7 +66,7 @@ ipcMain.handle('find-latest-video', async (_event) => {
     // 각 날짜 폴더에서 가장 최근 영상 찾기
     for (const dateFolder of dateFolders) {
       const folderPath = path.join(baseDir, dateFolder);
-      
+
       try {
         const files = fs.readdirSync(folderPath)
           .filter(file => file.endsWith('.mp4'))
