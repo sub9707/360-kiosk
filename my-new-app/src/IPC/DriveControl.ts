@@ -21,18 +21,32 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     const parsed = path.parse(inputPath);
     const outputPath = path.join(parsed.dir, `edited_${parsed.name}.mp4`);
     const ffmpegPath = path.resolve(__dirname, '../../src/exe/ffmpeg/ffmpeg.exe');
+    
+    // intro, outro 영상 경로
+    const introPath = path.resolve(__dirname, '../../src/renderer/assets/videos/intro.mp4');
+    const outroPath = path.resolve(__dirname, '../../src/renderer/assets/videos/outro.mp4');
 
-    // 오디오 제거하고 비디오만 편집
-    const cmd = `"${ffmpegPath}" -i "${inputPath}" -an -filter_complex `
-      + `"[0:v]trim=0:2,setpts=PTS-STARTPTS[v0]; `
-      + `[0:v]trim=2:6,setpts=(PTS-STARTPTS)/3[v1]; `
-      + `[0:v]trim=6:8,setpts=PTS-STARTPTS[v2]; `
-      + `[0:v]trim=8:12,setpts=(PTS-STARTPTS)/3[v3]; `
-      + `[0:v]trim=15:9999,setpts=PTS-STARTPTS[v4]; `
-      + `[v0][v1][v2][v3][v4]concat=n=5:v=1:a=0[outv]" `
+    // intro, outro 파일 존재 확인
+    if (!fs.existsSync(introPath)) {
+      console.warn('⚠️ intro.mp4 not found:', introPath);
+    }
+    if (!fs.existsSync(outroPath)) {
+      console.warn('⚠️ outro.mp4 not found:', outroPath);
+    }
+
+    // intro + 편집된 메인 영상 + outro 구성
+    // 메인 영상을 1080x1920으로 크롭하여 해상도 통일
+    const cmd = `"${ffmpegPath}" -i "${introPath}" -i "${inputPath}" -i "${outroPath}" -an -filter_complex `
+      + `"[1:v]crop=1080:1920:0:210,trim=0:2,setpts=PTS-STARTPTS[v0]; `
+      + `[1:v]crop=1080:1920:0:210,trim=2:6,setpts=(PTS-STARTPTS)/3[v1]; `
+      + `[1:v]crop=1080:1920:0:210,trim=6:8,setpts=PTS-STARTPTS[v2]; `
+      + `[1:v]crop=1080:1920:0:210,trim=8:12,setpts=(PTS-STARTPTS)/3[v3]; `
+      + `[1:v]crop=1080:1920:0:210,trim=15:9999,setpts=PTS-STARTPTS[v4]; `
+      + `[v0][v1][v2][v3][v4]concat=n=5:v=1:a=0[main]; `
+      + `[0:v][main][2:v]concat=n=3:v=1:a=0[outv]" `
       + `-map "[outv]" "${outputPath}"`;
 
-    console.log('🎬 Starting video edit (audio removed):', outputPath);
+    console.log('🎬 Starting video edit with intro/outro (audio removed):', outputPath);
 
     await new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
@@ -40,7 +54,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
           console.error("❌ FFmpeg editing error:", stderr);
           reject(error);
         } else {
-          console.log("✅ Video edit complete:", outputPath);
+          console.log("✅ Video edit complete with intro/outro:", outputPath);
           resolve(outputPath);
         }
       });
