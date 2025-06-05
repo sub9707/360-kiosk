@@ -5,7 +5,7 @@ let isCameraConnected = false;
 let isRecording = false;
 let currentRecordingPath: string | null = null;
 
-const DEVICE_IP = '192.168.219.102:36842';
+const DEVICE_IP = '192.168.219.102:39618';
 
 // 카메라 연결 로직
 ipcMain.on('camera-connect', async (event) => {
@@ -55,11 +55,11 @@ ipcMain.on('camera-record-start', async (event) => {
         isRecording = false;
         
         if (savedPath) {
-            console.log(`[IPC] 녹화 및 저장 성공: ${savedPath}`);
+            console.log(`[IPC] Record and save done: ${savedPath}`);
             currentRecordingPath = savedPath;
             event.reply('camera-record-complete', { success: true, path: savedPath });
         } else {
-            console.error(`[IPC] 녹화 실패`);
+            console.error(`[IPC] record failed`);
             event.reply('camera-record-complete', { success: false });
         }
     }
@@ -79,7 +79,7 @@ ipcMain.on('camera-record-stop', async (event) => {
     try {
         // 1. 진행 중인 녹화 중단
         await stopScreenRecord();
-        console.log('[IPC] 녹화 중단 완료');
+        console.log('[IPC] record stopped');
 
         // 2. 현재 녹화 경로가 있다면 삭제 (부분적으로 생성된 파일)
         if (currentRecordingPath) {
@@ -96,7 +96,7 @@ ipcMain.on('camera-record-stop', async (event) => {
         event.reply('camera-record-stop-reply', { success: true });
         
     } catch (error) {
-        console.error('[IPC] 녹화 중지 오류:', error);
+        console.error('[IPC] error while stop recording:', error);
         event.reply('camera-record-stop-reply', { success: false, error: error.message });
     }
 });
@@ -124,7 +124,7 @@ const deleteRecordedVideo = async (targetPath: string) => {
                     fs.unlinkSync(path.join(targetPath, file));
                     deletedCount++;
                 } catch (err) {
-                    console.warn(`삭제 실패: ${file}`, err);
+                    console.warn(`failed to delete: ${file}`, err);
                 }
             }
             return { success: true, deleted: deletedCount };
@@ -132,7 +132,7 @@ const deleteRecordedVideo = async (targetPath: string) => {
             return { success: false, error: '삭제 대상이 파일이나 폴더가 아닙니다.' };
         }
     } catch (error: any) {
-        console.error('영상 삭제 오류:', error);
+        console.error('video deleting failed:', error);
         return { success: false, error: error.message };
     }
 };

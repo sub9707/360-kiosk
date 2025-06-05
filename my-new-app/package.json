@@ -27,6 +27,7 @@
     "@electron-forge/plugin-fuses": "^7.8.1",
     "@electron-forge/plugin-vite": "^7.8.1",
     "@electron/fuses": "^1.8.0",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "@types/react-router-dom": "^5.3.3",
@@ -43,8 +44,11 @@
   "dependencies": {
     "aws-sdk": "^2.1692.0",
     "electron-squirrel-startup": "^1.0.1",
+    "googleapis": "^149.0.0",
+    "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-qr-code": "^2.0.15",
     "react-router-dom": "^7.6.1"
   }
 }
