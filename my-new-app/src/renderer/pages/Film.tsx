@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import HomeIcon from '/src/renderer/assets/icons/home.svg';
 import Logo from '/src/renderer/assets/icons/logo.png';
+import Spinner from '../components/Spinner/Spinner';
 
 const Film: React.FC = () => {
     const { ipcRenderer } = window.require("electron");
@@ -15,7 +16,7 @@ const Film: React.FC = () => {
     const [connectError, setConnectError] = useState(false);
     const [editingState, setEditingState] = useState('편집 시작');
     const [recordedPath, setRecordedPath] = useState<string | null>(null);
-    
+
     // 프로그레스 바를 위한 상태
     const [timeLeft, setTimeLeft] = useState(15);
     const [progress, setProgress] = useState(100);
@@ -25,30 +26,30 @@ const Film: React.FC = () => {
         setIsConnecting(true);
         setConnectError(false);
         setIsConnected(false);
-        
+
         ipcRenderer.send("camera-connect");
     };
 
     const handleStartRecording = () => {
         if (!isConnected) return;
-        
+
         // 프로그레스 바 초기화
         setTimeLeft(15);
         setProgress(100);
-        
+
         ipcRenderer.send("camera-record-start");
     };
 
     const handleStopRecording = () => {
         if (!isRecording) return;
-        
+
         ipcRenderer.send("camera-record-stop");
     };
 
     const handleRetake = async () => {
         setIsRecording(false);
         setEditingState('편집 시작');
-        
+
         // 프로그레스 바 초기화
         setTimeLeft(15);
         setProgress(100);
@@ -95,17 +96,10 @@ const Film: React.FC = () => {
         }
     };
 
-    // 스피너 컴포넌트
-    const Spinner = () => (
-        <div className={styles.spinner}>
-            <div className={styles.spinnerRing}></div>
-        </div>
-    );
-
-    // 프로그레스 바 타이머 효과
+    // 프로그레스 바 타이머
     useEffect(() => {
         let interval = null;
-        
+
         if (isRecording && timeLeft > 0) {
             interval = setInterval(() => {
                 setTimeLeft(timeLeft => {
@@ -145,7 +139,7 @@ const Film: React.FC = () => {
 
         const handleRecordStopReply = (_event: any, result: { success: boolean, error?: string }) => {
             console.log('[React] 녹화 중지 응답:', result);
-            
+
             if (result.success) {
                 // 촬영 시작 상태로 초기화
                 setIsRecording(false);
@@ -185,12 +179,6 @@ const Film: React.FC = () => {
         };
     }, []);
 
-    const getProgressColor = () => {
-        if (timeLeft > 10) return '#4ade80'; // 초록색
-        if (timeLeft > 5) return '#facc15';  // 노란색
-        return '#ef4444'; // 빨간색
-    };
-
     return (
         <div className={styles.container}>
             <div className={styles.menubar}>
@@ -212,7 +200,7 @@ const Film: React.FC = () => {
                     {isConnecting && (
                         <div className={styles.connectingStatus}>
                             <Spinner />
-                            <p>카메라에 연결중입니다...</p>
+                            <p>카메라 연결 중</p>
                         </div>
                     )}
 
@@ -225,71 +213,79 @@ const Film: React.FC = () => {
                     )}
 
                     {/* 연결 완료 & 아직 촬영 안 함 */}
-                    {isConnected && !isRecording && editingState === '편집 시작' && !isConnecting && (
-                        <button onClick={handleStartRecording}>촬영 시작</button>
-                    )}
+                    {
+                        isConnected && !isRecording && editingState === '편집 시작' && !isConnecting && (
+                            <button onClick={handleStartRecording}>촬영 시작</button>
+                        )
+                    }
 
                     {/* 촬영 중 */}
-                    {isRecording && (
-                        <div className={styles.filmInProgress}>
-                            <p>촬영이 진행중입니다</p>
-                            
-                            {/* 프로그레스 바 섹션 */}
-                            <div className={styles.progressSection}>
-                                <div 
-                                    className={styles.timeDisplay}
-                                    style={{ color: getProgressColor() }}
-                                >
-                                    {timeLeft}초
-                                </div>
-                                
-                                <div className={styles.progressBarContainer}>
-                                    <div className={styles.progressBarBg}>
-                                        <div 
-                                            className={styles.progressBar}
-                                            style={{ 
-                                                width: `${progress}%`,
-                                                backgroundColor: getProgressColor(),
-                                                boxShadow: `0 0 20px ${getProgressColor()}40`
-                                            }}
-                                        >
-                                            <div className={styles.progressShine}></div>
+                    {
+                        (isRecording &&
+                            <div className={styles.filmInProgress}>
+                                <p>촬영 중</p>
+
+                                {/* 프로그레스 바 섹션 */}
+                                <div className={styles.progressSection}>
+                                    <div className={styles.progressBarContainer}>
+                                        <div className={styles.progressBarBg}>
+                                            <div
+                                                className={styles.progressBar}
+                                                style={{
+                                                    width: `${100 - progress}%`
+                                                }}
+                                            >
+                                                <div className={styles.progressShine}></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <button onClick={handleStopRecording}>
-                                촬영 중지
-                            </button>
-                        </div>
-                    )}
+                                <button onClick={handleStopRecording}>
+                                    촬영 중지
+                                </button>
+                            </div>
+                        )
+                    }
 
                     {/* 촬영 완료됨 */}
-                    {!isRecording && editingState !== '편집 시작' && !isConnecting && (
-                        <div className={styles.filmComplete}>
-                            {editingState === '편집중' && (
-                                <div className={styles.editingStatus}>
-                                    <Spinner />
-                                    <p>촬영 영상을 편집 중입니다</p>
-                                </div>
-                            )}
-                            
-                            {editingState !== '편집중' && (
-                                <p>촬영이 완료되었습니다</p>
-                            )}
+                    {
+                        !isRecording && editingState !== '편집 시작' && !isConnecting &&
+                        (
+                            <div className={styles.filmComplete}>
+                                {
+                                    editingState === '편집중' &&
+                                    (
+                                        <div className={styles.editingStatus}>
+                                            <Spinner />
+                                            <p>편집 중</p>
+                                        </div>
+                                    )
+                                }
 
-                            {editingState !== '편집중' && (
-                                <button onClick={handleRetake}>
-                                    재촬영
-                                </button>
-                            )}
+                                {
+                                    editingState !== '편집중' &&
+                                    (
+                                        <p>촬영이 완료되었습니다</p>
+                                    )
+                                }
 
-                            <button onClick={testHandler} disabled={editingState === '편집중'}>
-                                {editingState}
-                            </button>
-                        </div>
-                    )}
+                                {editingState !== '편집중' && (
+                                    <button onClick={handleRetake}>
+                                        재촬영
+                                    </button>
+                                )}
+                                {
+                                    editingState !== '편집중'
+                                    &&
+                                    <button onClick={testHandler} disabled={editingState === '편집중'}>
+                                        {editingState}
+                                    </button>
+                                }
+
+                            </div>
+                        )
+                    }
                 </div>
             </div>
             <div className={styles.logo}>

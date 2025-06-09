@@ -1,8 +1,7 @@
 .pageWrapper {
     width: 100%;
     height: 100%;
-    background: #513973;
-    background: radial-gradient(circle, rgba(81, 57, 115, 1) 0%, rgba(33, 33, 43, 1) 100%);
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -38,11 +37,13 @@
             }
         }
     }
-    .videoResult{
+
+    .videoResult {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+
         .videoPlayer {
             width: 35rem; // 세로 비율에 맞게 너비 조정
             background-color: black;
@@ -51,7 +52,7 @@
             overflow: hidden;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
-    
+
         p {
             font-size: 2rem;
             color: white;
@@ -66,19 +67,25 @@
         justify-content: center;
         align-items: center;
         gap: 2rem;
+        width: 100%;
 
         .codeBox {
-            width: 15rem;
-            height: 15rem;
-            background-color: white;
-            background-image: url('/src/renderer/assets/images/sample_Qrcode.png');
-            background-repeat: no-repeat;
-            background-size: contain;
-        }
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
 
-        p {
-            font-size: 1.5rem;
-            color: white;
+            img {
+                width: 15rem;
+                height: 15rem;
+            }
+
+            p {
+                font-family: 'NanumBarunGothic';
+                font-weight: 400;
+                font-size: 2.5rem;
+                color: white;
+            }
         }
     }
 
