@@ -5,7 +5,7 @@ let isCameraConnected = false;
 let isRecording = false;
 let currentRecordingPath: string | null = null;
 
-const DEVICE_IP = '192.168.219.102:39618';
+const DEVICE_IP = '192.168.219.102:37484';
 
 // 카메라 연결 로직
 ipcMain.on('camera-connect', async (event) => {

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { execSync } from 'child_process';
 
-const ADB_PATH = `F:\\dev\\platform-tools\\adb.exe`;
+const ADB_PATH = path.resolve(__dirname, '../../src/exe/adb/adb.exe');
 const TEMP_DEVICE_PATH = '/sdcard/temp_record.mp4';
 
 let currentRecordingProcess: any = null;
