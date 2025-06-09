@@ -38,10 +38,10 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     // 메인 영상을 1080x1920으로 크롭하여 해상도 통일
     const cmd = `"${ffmpegPath}" -i "${introPath}" -i "${inputPath}" -i "${outroPath}" -an -filter_complex `
       + `"[1:v]crop=1080:1920:0:210,trim=0:2,setpts=PTS-STARTPTS[v0]; `
-      + `[1:v]crop=1080:1920:0:210,trim=2:6,setpts=(PTS-STARTPTS)/3[v1]; `
+      + `[1:v]crop=1080:1920:0:210,trim=2:6,setpts=(PTS-STARTPTS)/2[v1]; `
       + `[1:v]crop=1080:1920:0:210,trim=6:8,setpts=PTS-STARTPTS[v2]; `
-      + `[1:v]crop=1080:1920:0:210,trim=8:12,setpts=(PTS-STARTPTS)/3[v3]; `
-      + `[1:v]crop=1080:1920:0:210,trim=15:9999,setpts=PTS-STARTPTS[v4]; `
+      + `[1:v]crop=1080:1920:0:210,trim=8:12,setpts=(PTS-STARTPTS)/2[v3]; `
+      + `[1:v]crop=1080:1920:0:210,trim=12:9999,setpts=PTS-STARTPTS[v4]; `
       + `[v0][v1][v2][v3][v4]concat=n=5:v=1:a=0[main]; `
       + `[0:v][main][2:v]concat=n=3:v=1:a=0[outv]" `
       + `-map "[outv]" "${outputPath}"`;
