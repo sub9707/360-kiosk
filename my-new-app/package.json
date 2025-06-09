@@ -5,10 +5,10 @@
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "start": "set NODE_ENV=development && electron-forge start",
+    "package": "set NODE_ENV=production && electron-forge package",
+    "make": "set NODE_ENV=production && electron-forge make",
+    "publish": "set NODE_ENV=production && electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1692.0",
+    "dotenv": "^16.5.0",
     "electron-squirrel-startup": "^1.0.1",
     "googleapis": "^149.0.0",
     "qrcode": "^1.5.4",

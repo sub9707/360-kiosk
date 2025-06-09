@@ -4,6 +4,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { google } from 'googleapis';
 import QRCode from 'qrcode';
+import { getResourcePath } from '../utils/path-utils';
 
 // Google Drive 인증 설정
 const KEYFILEPATH = path.resolve(__dirname, '../../credentials.json');
@@ -20,7 +21,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
   try {
     const parsed = path.parse(inputPath);
     const outputPath = path.join(parsed.dir, `edited_${parsed.name}.mp4`);
-    const ffmpegPath = path.resolve(__dirname, '../../src/exe/ffmpeg/ffmpeg.exe');
+    const ffmpegPath = getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
     
     // intro, outro 영상 경로
     const introPath = path.resolve(__dirname, '../../src/renderer/assets/videos/intro.mp4');
