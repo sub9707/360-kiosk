@@ -3,6 +3,7 @@ import styles from './QRPage.module.scss';
 import { Link } from 'react-router-dom';
 
 import HomeIcon from '/src/renderer/assets/icons/home.svg';
+import Spinner from '../components/Spinner/Spinner';
 
 const QRPage: React.FC = () => {
   const { ipcRenderer } = window.require("electron");
@@ -43,7 +44,7 @@ const QRPage: React.FC = () => {
       console.log('Loading video from:', targetPath);
       const videoBlob = await ipcRenderer.invoke('get-video-blob', targetPath);
       console.log('Video blob result:', { success: videoBlob.success, dataLength: videoBlob.data?.length });
-      
+
       if (videoBlob.success && videoBlob.data && videoBlob.data.length > 0) {
         const blob = new Blob([new Uint8Array(videoBlob.data)], { type: 'video/mp4' });
         const blobUrl = URL.createObjectURL(blob);
@@ -62,7 +63,7 @@ const QRPage: React.FC = () => {
       // 🔗 드라이브 업로드 및 QR 생성
       console.log('Starting upload process for:', targetPath);
       const uploadResult = await ipcRenderer.invoke('upload-video-and-qr', targetPath);
-      
+
       if (uploadResult.success) {
         console.log('Upload successful:', uploadResult);
         setQrLink(uploadResult.videoUrl);
@@ -128,41 +129,31 @@ const QRPage: React.FC = () => {
             </div>
           )}
         </div>
-        <p>
-          {videoType === 'loading' && '비디오를 불러오는 중...'}
-          {videoType === 'edited' && `✅ 편집된 영상: ${videoFileName}`}
-          {videoType === 'latest' && `📽️ 최신 영상: ${videoFileName}`}
-          {videoType === 'sample' && `🎬 샘플 영상: ${videoFileName}`}
-          {videoType === 'error' && '❌ 영상을 불러올 수 없습니다'}
-        </p>
       </div>
 
       <div className={styles.qrCode}>
         {qrImageSrc ? (
-          <div>
-            <img 
-              src={qrImageSrc} 
-              alt="QR Code" 
-              style={{ width: '180px', height: '180px' }}
+          <div className={styles.codeBox}>
+            <img
+              src={qrImageSrc}
+              alt="QR Code"
             />
+            <p>QR코드를 스캔하여 영상을 다운로드하세요</p>
           </div>
         ) : (
-          <div className={styles.codeBox}>QR 생성 중...</div>
-        )}
-        <p>QR코드를 확인하고 영상을 다운로드하세요</p>
-        {qrLink && (
-          <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
-            공유 링크: {qrLink}
-          </p>
+          <div className={styles.codeBox}>
+            <Spinner />
+            <p>QR코드 생성 중</p>
+          </div>
         )}
       </div>
 
       <Link to={'/'} className={styles.homeBtn}>
-        <img src={HomeIcon}/>메인화면
+        <img src={HomeIcon} />메인화면
       </Link>
 
       <footer>
-        <small>&copy; 2025 YourCompanyName. All rights reserved.</small>
+        <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
       </footer>
     </div>
   );

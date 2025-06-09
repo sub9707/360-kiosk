@@ -26,7 +26,8 @@
  * ```
  */
 
-import './index.css';
+import './renderer/styles/index.css';
+import './renderer/styles/fonts.css';
 
 import './root';
 

@@ -1,14 +1,13 @@
 .container {
     width: 100%;
     height: 100%;
-    background: #513973;
-    background: radial-gradient(circle, rgba(81, 57, 115, 1) 0%, rgba(33, 33, 43, 1) 100%);
     position: relative;
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
 
     .menubar {
         width: 100%;
         height: 5rem;
-        background-color: rgba(0, 0, 0, 0.425);
+        background-color: rgba(255, 255, 255, 0.1);
         position: fixed;
         top: 0;
         left: 0;
@@ -20,6 +19,7 @@
             display: flex;
             align-items: center;
             position: relative;
+            font-family: 'NanumBarunGothic';
 
             .homeBtn {
                 position: absolute;
@@ -29,7 +29,7 @@
                 text-decoration: none;
                 color: white;
                 border-radius: 50%;
-                border: white 4px solid;
+                border: white 2px solid;
                 width: 3.5rem;
                 height: 3.5rem;
                 display: flex;
@@ -70,18 +70,21 @@
 
             p {
                 color: white;
-                font-size: 5rem;
+                font-size: 4rem;
+                font-family: 'NanumBarunGothic';
+                font-weight: 700;
                 text-align: center;
             }
 
             button {
-                background-color: transparent;
-                border: white solid 8px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border: white solid 6px;
                 border-radius: 8px;
                 width: 30rem;
                 height: 10rem;
                 color: white;
                 font-size: 4rem;
+                font-family: 'NanumBarunGothic';
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.3s ease;
@@ -98,30 +101,13 @@
                 }
             }
 
-            // 스피너 애니메이션
-            .spinner {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin-bottom: 3rem;
-            }
-
-            .spinnerRing {
-                width: 8rem;
-                height: 8rem;
-                border: 8px solid rgba(255, 255, 255, 0.2);
-                border-top: 8px solid aqua;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-
             // 연결중 상태 스타일
             .connectingStatus {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
-                
+
                 p {
                     margin: 0;
                     font-size: 4rem;
@@ -137,14 +123,14 @@
                 align-items: center;
                 text-align: center;
                 gap: 3rem;
-                
+
                 p {
                     margin: 0;
                     font-size: 4rem;
-                    color: #ff6b6b;
+                    color: whtie;
                     font-weight: 500;
                 }
-                
+
                 button {
                     background-color: transparent;
                     border: #ff6b6b solid 6px;
@@ -156,12 +142,12 @@
                     font-weight: 700;
                     cursor: pointer;
                     transition: all 0.3s ease;
-                    
+
                     &:hover {
                         background-color: rgba(255, 107, 107, 0.1);
                         transform: scale(1.02);
                     }
-                    
+
                     &:active {
                         background-color: rgba(255, 107, 107, 0.2);
                     }
@@ -175,7 +161,8 @@
                 align-items: center;
                 text-align: center;
                 margin-bottom: 3rem;
-                
+                gap: 2rem;
+
                 p {
                     margin: 0;
                     font-size: 4rem;
@@ -196,27 +183,25 @@
                 }
             }
 
+            .filmComplete {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
             .filmInProgress {
                 .progressSection {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    margin: 3rem 0;
+                    margin-bottom: 10rem;
                     width: 100%;
                     max-width: 50rem;
-
-                    .timeDisplay {
-                        font-size: 3rem;
-                        font-weight: bold;
-                        margin-bottom: 2rem;
-                        text-shadow: 0 0 20px currentColor;
-                        transition: color 0.3s ease;
-                    }
 
                     .progressBarContainer {
                         width: 100%;
                         display: flex;
-                        flex-direction: column;
                         align-items: center;
                         gap: 1rem;
 
@@ -238,6 +223,7 @@
                                 transition: all 1s linear;
                                 position: relative;
                                 overflow: hidden;
+                                background-color: white;
 
                                 .progressShine {
                                     position: absolute;
@@ -283,10 +269,6 @@
     }
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
 
 @keyframes shine {
     0% {

@@ -48,9 +48,9 @@
             width: 100%;
             height: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            transform: translateY(25%);
 
             .titleBox {
                 text-align: center;
@@ -69,44 +69,32 @@
             }
 
             .startBtn {
+                font-family: 'NanumBarunGothic';
                 text-decoration: none;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 width: 25rem;
-                height: 6rem;
-                margin-top: 8rem;
+                height: 8rem;
+                font-size: 3.5rem;
+                font-weight: 700;
                 color: white;
-                font-size: 3rem;
-                cursor: pointer;
                 text-align: center;
                 user-select: none;
-                border: none;
-                background-size: 300% 100%;
-                border-radius: 15px;
-                -o-transition: all .4s ease-in-out;
-                -webkit-transition: all .4s ease-in-out;
-                transition: all .4s ease-in-out;
-                background-image: linear-gradient(to right,
-                        #667eea,
-                        #764ba2,
-                        #6b8dd6,
-                        #8e37d7);
-                box-shadow: 0 4px 15px 0 rgba(116, 79, 168, 0.75);
-
-                &:hover {
-                    background-position: 100% 0;
-                    -o-transition: all .4s ease-in-out;
-                    -webkit-transition: all .4s ease-in-out;
-                    transition: all .4s ease-in-out;
-                }
+                cursor: pointer;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+                backdrop-filter: blur(7.7px);
+                -webkit-backdrop-filter: blur(7.7px);
+                border: 2px solid rgba(255, 255, 255, 1);
             }
 
         }
     }
 
     .logo {
-        position: fixed;
+        position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
@@ -116,16 +104,32 @@
         justify-content: center;
         z-index: 10;
 
-        img {
-            filter: invert(1);
-            width: 20rem;
+        .logoWrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            img {
+                filter: invert(1);
+                width: 20rem;
+            }
+
+            .divider {
+                display: none;
+                width: 18rem;
+                height: 4px;
+                margin-top: 1.5rem;
+                background-color: rgb(255, 255, 255, 0.6);
+                border-radius: 16px;
+            }
         }
     }
 
     .footer {
         position: absolute;
         bottom: 0;
-        left: 0;
+        right: 0;
         width: 100%;
         z-index: 5;
         display: flex;
