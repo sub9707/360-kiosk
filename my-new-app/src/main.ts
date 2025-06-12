@@ -3,7 +3,8 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
 import './IPC/DriveControl';
-import './IPC/CameraControl';
+// import './IPC/CameraControl';
+import './IPC/MobileControl';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
