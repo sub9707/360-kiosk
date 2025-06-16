@@ -29,7 +29,6 @@ const Film: React.FC = () => {
     // 🐛 디버깅을 위한 상태 추가
     const [debugInfo, setDebugInfo] = useState<string[]>([]);
     const [networkTest, setNetworkTest] = useState<NetworkTestResult | null>(null);
-    const [isNetworkTesting, setIsNetworkTesting] = useState(false);
     const [showDebugPanel, setShowDebugPanel] = useState(true); // 디버깅 패널 표시 여부
 
     // 프로그레스 바를 위한 상태 (15초 제한)
@@ -47,33 +46,14 @@ const Film: React.FC = () => {
         setDebugInfo(prev => [...prev.slice(-12), logMessage]); // 최대 13개까지 유지
     };
 
-    // 🌐 네트워크 연결 테스트
-    const handleNetworkTest = async () => {
-        addDebugLog('🌐 네트워크 테스트 시작');
-        setIsNetworkTesting(true);
-        try {
-            const result = await ipcRenderer.invoke('test-network-connection');
-            setNetworkTest(result);
-            addDebugLog(`네트워크 테스트 완료: WebSocket(${result.websocket ? '✅' : '❌'}), HTTP(${result.http ? '✅' : '❌'})`);
-            if (result.fileList) {
-                addDebugLog(`Android 파일 목록: ${result.fileList.length}개 파일`);
-            }
-            
-            // 🔍 추가 진단 정보
-            if (!result.websocket && !result.http) {
-                addDebugLog('❌ 전체 네트워크 연결 실패 - Android 앱이 실행 중인지 확인하세요');
-                addDebugLog('🔍 확인사항: 1) Android 앱 실행됨 2) 같은 WiFi 3) IP 주소 정확');
-            } else if (!result.websocket) {
-                addDebugLog('❌ WebSocket 연결 실패 - IPCService 확인 필요 (포트 8080)');
-            } else if (!result.http) {
-                addDebugLog('❌ HTTP 서버 연결 실패 - FileServer 확인 필요 (포트 8081)');
-            }
-        } catch (error) {
-            addDebugLog(`네트워크 테스트 오류: ${error}`);
-        } finally {
-            setIsNetworkTesting(false);
-        }
+    // 재연결 버튼 클릭 시 호출할 함수
+    const handleReconnect = () => {
+        setEditingState('대기중'); // UI 상태 초기화
+        setIsConnecting(true);   // 로딩 스피너 표시
+        // 새로 만든 'reconnect-to-camera' 핸들러 호출
+        ipcRenderer.invoke('reconnect-to-camera');
     };
+
 
     // 🔧 Android IP 변경 테스트
     const handleChangeAndroidIP = () => {
@@ -189,7 +169,7 @@ const Film: React.FC = () => {
 
     const handleEditVideo = async () => {
         addDebugLog(`편집 요청 시도 - recordedPath: ${recordedPath || 'null'}`);
-        
+
         if (!recordedPath) {
             addDebugLog('❌ 편집 실패: recordedPath가 null');
             alert(`녹화된 영상이 없습니다. 먼저 촬영해주세요.
@@ -231,102 +211,51 @@ const Film: React.FC = () => {
     const handleManualDownloadLatestFile = async () => {
         try {
             addDebugLog('🔍 수동 다운로드: Android 파일 목록 확인 중...');
-            
+
             // 1. 네트워크 테스트로 파일 목록 가져오기
             const networkResult = await ipcRenderer.invoke('test-network-connection');
-            
+
             if (!networkResult.http) {
                 addDebugLog('❌ 수동 다운로드 실패: HTTP 연결 불가');
                 alert('Android HTTP 서버에 연결할 수 없습니다.');
                 return;
             }
-            
+
             if (!networkResult.fileList || networkResult.fileList.length === 0) {
                 addDebugLog('❌ 수동 다운로드 실패: Android에 파일이 없음');
                 alert('Android에 다운로드할 파일이 없습니다.');
                 return;
             }
-            
+
             // 2. 가장 최신 파일 선택 (파일명 정렬)
             const sortedFiles = networkResult.fileList.sort((a: string, b: string) => b.localeCompare(a));
             const latestFileName = sortedFiles[0];
-            
+
             addDebugLog(`🎬 수동 다운로드 대상: ${latestFileName}`);
             addDebugLog(`📁 전체 파일 목록: ${networkResult.fileList.join(', ')}`);
-            
+
             // 3. 파일 다운로드 실행
             const result = await ipcRenderer.invoke('copy-video-from-android', latestFileName);
-            
+
             if (result.success) {
                 addDebugLog(`✅ 수동 다운로드 성공: ${result.localVideoPath}`);
                 setRecordedPath(result.localVideoPath);
                 setAndroidFileName(latestFileName);
                 setEditingState('촬영 완료');
                 setDownloadCompleted(true);
-                
+
                 // 🗑️ Android 원본 파일 삭제
                 addDebugLog(`🗑️ Android 원본 파일 삭제: ${latestFileName}`);
                 await ipcRenderer.invoke('clear-android-video', latestFileName);
-                
+
             } else {
                 addDebugLog(`❌ 수동 다운로드 실패: ${result.error}`);
                 alert(`수동 다운로드 실패: ${result.error}`);
             }
-            
+
         } catch (error) {
             addDebugLog(`❌ 수동 다운로드 오류: ${error}`);
             alert(`수동 다운로드 중 오류가 발생했습니다: ${error}`);
-        }
-    };
-
-    const handleTestDownload = async () => {
-        if (!androidFileName) {
-            // 네트워크 테스트에서 파일 목록을 가져와서 가장 최신 파일로 테스트
-            if (networkTest?.fileList && networkTest.fileList.length > 0) {
-                // 🔧 파일명으로 정렬해서 가장 최신 파일 선택 (VIDEO_YYYYMMDD_HHMMSS.mp4 형태)
-                const sortedFiles = networkTest.fileList.sort((a, b) => b.localeCompare(a));
-                const latestFileName = sortedFiles[0]; // 가장 최신 파일
-                
-                addDebugLog(`수동 다운로드 테스트 (최신 파일): ${latestFileName}`);
-                addDebugLog(`전체 파일 목록: ${networkTest.fileList.join(', ')}`);
-                
-                try {
-                    const result = await ipcRenderer.invoke('copy-video-from-android', latestFileName);
-                    if (result.success) {
-                        addDebugLog(`수동 다운로드 성공: ${result.localVideoPath}`);
-                        setRecordedPath(result.localVideoPath);
-                        setAndroidFileName(latestFileName);
-                        setEditingState('촬영 완료');
-                        setDownloadCompleted(true);
-                    } else {
-                        addDebugLog(`수동 다운로드 실패: ${result.error}`);
-                        alert(`다운로드 실패: ${result.error}`);
-                    }
-                } catch (error) {
-                    addDebugLog(`수동 다운로드 오류: ${error}`);
-                    alert(`다운로드 오류: ${error}`);
-                }
-            } else {
-                alert('테스트할 Android 파일이 없습니다. 네트워크 테스트를 먼저 실행하세요.');
-            }
-            return;
-        }
-
-        addDebugLog(`수동 다운로드 테스트: ${androidFileName}`);
-        try {
-            const result = await ipcRenderer.invoke('copy-video-from-android', androidFileName);
-            if (result.success) {
-                addDebugLog(`수동 다운로드 성공: ${result.localVideoPath}`);
-                setRecordedPath(result.localVideoPath);
-                setEditingState('촬영 완료');
-                setDownloadCompleted(true);
-            } else {
-                addDebugLog(`수동 다운로드 실패: ${result.error}`);
-                alert(`다운로드 실패: ${result.error}`);
-            }
-        } catch (error) {
-            addDebugLog(`수동 다운로드 오류: ${error}`);
-            alert(`다운로드 오류: ${error}`);
         }
     };
 
@@ -340,19 +269,19 @@ const Film: React.FC = () => {
             interval = setInterval(() => {
                 setTimeLeft(prevTime => {
                     const newTime = prevTime - 1;
-                    setProgress(((15 - newTime) / 15) * 100); 
+                    setProgress(((15 - newTime) / 15) * 100);
                     if (newTime <= 0) {
                         addDebugLog('🎬 촬영 시간 초과 (렌더러 타이머 - 15초 완료)');
                         addDebugLog('📤 Android에 녹화 중지 명령 전송');
-                        
+
                         // 🔧 15초 완료 시 실제로 Android에 녹화 중지 명령 전송
                         ipcRenderer.send("camera-record-stop");
-                        
+
                         setIsRecording(false);
-                        
+
                         // 🔥 자동 다운로드 로직 제거 - camera-record-complete 이벤트에서만 처리됨
                         addDebugLog('⏰ 타이머 완료 - camera-record-complete 이벤트를 대기합니다');
-                        
+
                         if (interval) clearInterval(interval);
                         return 0;
                     }
@@ -371,7 +300,7 @@ const Film: React.FC = () => {
     // IPC 이벤트 리스너 등록 및 해제
     useEffect(() => {
         ipcRenderer.send('set-main-window');
-        
+
         // 🔧 초기 로드 시에만 카메라 연결 시도
         if (editingState === '대기중') {
             handleConnectCamera();
@@ -382,7 +311,7 @@ const Film: React.FC = () => {
         // 카메라 연결 응답 처리 (촬영 완료 상태 보존)
         const handleCameraConnectReply = (_event: any, success: boolean, errorMessage?: string) => {
             addDebugLog(`연결 응답: ${success ? '성공' : '실패'} ${errorMessage || ''}`);
-            
+
             // 🔧 이미 촬영이 완료된 상태에서는 UI 상태를 변경하지 않음
             if (editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료') {
                 addDebugLog('🔒 촬영 완료 상태 보존 - UI 상태 변경 안함');
@@ -408,7 +337,7 @@ const Film: React.FC = () => {
                 setIsConnected(false);
                 setConnectError(true);
                 addDebugLog(`❌ 카메라 연결 실패: ${errorMessage || '알 수 없는 오류'}`);
-                
+
                 // 🔧 실패 시에만 alert 표시 (촬영 완료 상태가 아닐 때만)
                 if (editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료') {
                     const fullMessage = `카메라 연결 실패: ${errorMessage || '알 수 없는 오류'}
@@ -452,13 +381,13 @@ const Film: React.FC = () => {
         // 🔥 수정된 녹화 완료 응답 처리 (중복 방지)
         const handleRecordComplete = (_event: any, result: { success: boolean, path?: string, androidPath?: string, error?: string }) => {
             addDebugLog(`🎬 녹화 완료 응답: ${JSON.stringify(result)}`);
-            
+
             // 🔥 이미 다운로드 완료된 경우 추가 처리하지 않음
             if (downloadCompleted) {
                 addDebugLog('⚠️ 이미 다운로드 완료됨 - 중복 처리 방지');
                 return;
             }
-            
+
             setIsRecording(false);
             setTimeLeft(15);
             setProgress(0);
@@ -521,7 +450,7 @@ const Film: React.FC = () => {
                                     : '카메라 연결됨'}
                     </div>
                     {/* 🐛 디버깅 패널 토글 버튼 */}
-                    <button 
+                    <button
                         onClick={() => setShowDebugPanel(!showDebugPanel)}
                         style={{
                             marginLeft: '10px',
@@ -541,14 +470,14 @@ const Film: React.FC = () => {
 
             {/* 🐛 디버깅 정보 패널 */}
             {showDebugPanel && (
-                <div style={{ 
-                    position: 'fixed', 
-                    top: '60px', 
-                    right: '10px', 
-                    background: 'rgba(0,0,0,0.95)', 
-                    color: 'white', 
-                    padding: '15px', 
-                    fontSize: '11px', 
+                <div style={{
+                    position: 'fixed',
+                    top: '60px',
+                    right: '10px',
+                    background: 'rgba(0,0,0,0.95)',
+                    color: 'white',
+                    padding: '15px',
+                    fontSize: '11px',
                     maxWidth: '500px',
                     maxHeight: '500px',
                     zIndex: 1000,
@@ -559,27 +488,11 @@ const Film: React.FC = () => {
                     <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <strong>🐛 디버깅 정보</strong>
                         <div>
-                            <button 
-                                onClick={handleNetworkTest} 
-                                disabled={isNetworkTesting}
-                                style={{ 
-                                    marginRight: '5px',
-                                    padding: '2px 6px', 
-                                    fontSize: '10px',
-                                    background: isNetworkTesting ? '#666' : '#007acc',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    cursor: isNetworkTesting ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                {isNetworkTesting ? '테스트 중...' : '🌐 네트워크'}
-                            </button>
-                            <button 
+                            <button
                                 onClick={handleCheckAndroidServer}
-                                style={{ 
+                                style={{
                                     marginRight: '5px',
-                                    padding: '2px 6px', 
+                                    padding: '2px 6px',
                                     fontSize: '10px',
                                     background: '#FF9800',
                                     color: 'white',
@@ -590,10 +503,10 @@ const Film: React.FC = () => {
                             >
                                 🔍 서버확인
                             </button>
-                            <button 
+                            <button
                                 onClick={handleChangeAndroidIP}
-                                style={{ 
-                                    padding: '2px 6px', 
+                                style={{
+                                    padding: '2px 6px',
                                     fontSize: '10px',
                                     background: '#9C27B0',
                                     color: 'white',
@@ -606,7 +519,7 @@ const Film: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '8px' }}>
                         <div>recordedPath: <span style={{ color: recordedPath ? '#4CAF50' : '#f44336' }}>{recordedPath || 'null'}</span></div>
                         <div>androidFileName: <span style={{ color: androidFileName ? '#4CAF50' : '#f44336' }}>{androidFileName || 'null'}</span></div>
@@ -652,14 +565,7 @@ const Film: React.FC = () => {
                         <div className={styles.connectError}>
                             <p>카메라 연결에 실패했습니다</p>
                             <div style={{ marginTop: '10px' }}>
-                                <button onClick={handleConnectCamera}>카메라 재연결</button>
-                                <button 
-                                    onClick={handleNetworkTest} 
-                                    style={{ marginLeft: '10px', backgroundColor: '#FF9800' }}
-                                    disabled={isNetworkTesting}
-                                >
-                                    🌐 네트워크 테스트
-                                </button>
+                                <button onClick={handleReconnect}>카메라 재연결</button>
                             </div>
                         </div>
                     )}
@@ -709,52 +615,7 @@ const Film: React.FC = () => {
                                 <>
                                     <button onClick={handleRetake}>재촬영</button>
                                     <button onClick={handleEditVideo}>편집 시작</button>
-                                    {/* 🐛 디버깅용 버튼들 */}
-                                    <div style={{ marginTop: '10px' }}>
-                                        <button 
-                                            onClick={handleTestDownload} 
-                                            style={{ backgroundColor: '#FF9800', fontSize: '12px', padding: '5px 10px' }}
-                                        >
-                                            🐛 수동 다운로드
-                                        </button>
-                                        <button 
-                                            onClick={handleManualDownloadLatestFile} 
-                                            style={{ backgroundColor: '#4CAF50', fontSize: '12px', padding: '5px 10px', marginLeft: '5px' }}
-                                        >
-                                            🔄 최신 파일 가져오기
-                                        </button>
-                                        <button 
-                                            onClick={handleNetworkTest} 
-                                            disabled={isNetworkTesting}
-                                            style={{ 
-                                                backgroundColor: '#9C27B0', 
-                                                fontSize: '12px', 
-                                                padding: '5px 10px', 
-                                                marginLeft: '5px' 
-                                            }}
-                                        >
-                                            🌐 네트워크 재테스트
-                                        </button>
-                                    </div>
                                 </>
-                            )}
-                            {editingState === '촬영 실패' && (
-                                <div style={{ marginTop: '10px' }}>
-                                    <button onClick={handleRetake}>재촬영</button>
-                                    <button 
-                                        onClick={handleNetworkTest} 
-                                        disabled={isNetworkTesting}
-                                        style={{ marginLeft: '10px', backgroundColor: '#FF9800' }}
-                                    >
-                                        🌐 네트워크 테스트
-                                    </button>
-                                    <button 
-                                        onClick={handleCheckAndroidServer}
-                                        style={{ marginLeft: '5px', backgroundColor: '#FF5722', fontSize: '12px', padding: '5px 10px' }}
-                                    >
-                                        🔍 서버 확인
-                                    </button>
-                                </div>
                             )}
                         </div>
                     )}
