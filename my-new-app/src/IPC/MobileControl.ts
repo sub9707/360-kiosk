@@ -39,8 +39,6 @@ function debugLog(message: string, level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' = 
 
 // 🔧 연결 상태 업데이트 함수 (강화된 중복 방지)
 function updateConnectionStatus(isConnected: boolean, message: string) {
-    const now = Date.now();
-
     // 상태가 실제로 변경된 경우에만 알림
     if (lastConnectionStatus !== isConnected || !connectionNotificationSent) {
         debugLog(`🔔 Connection status changed (attempt #${connectionAttempts}): ${isConnected} - ${message}`, 'INFO');
@@ -90,14 +88,14 @@ async function testNetworkConnection(): Promise<{ websocket: boolean, http: bool
     // 1. HTTP 서버 연결 테스트
     try {
         debugLog('🌐 Testing HTTP connection...');
-        const response = await axios.get(`${ANDROID_FILE_SERVER_URL}/status`, { timeout: 5000 });
+        const response = await axios.get(`${ANDROID_FILE_SERVER_URL}/status`, { timeout: 3000 });
         result.http = response.status === 200;
         debugLog(`HTTP connection: ${result.http ? 'SUCCESS' : 'FAILED'}`, result.http ? 'INFO' : 'WARN');
 
         // 파일 목록 가져오기
         if (result.http) {
             try {
-                const listResponse = await axios.get(`${ANDROID_FILE_SERVER_URL}/list`, { timeout: 5000 });
+                const listResponse = await axios.get(`${ANDROID_FILE_SERVER_URL}/list`, { timeout: 3000 });
                 if (listResponse.data && listResponse.data.files) {
                     result.fileList = listResponse.data.files.map((f: any) => f.name);
                     debugLog(`Available files: ${result.fileList.length} files`);
@@ -120,7 +118,7 @@ async function testNetworkConnection(): Promise<{ websocket: boolean, http: bool
             const timeout = setTimeout(() => {
                 testWs.close();
                 reject(new Error('WebSocket connection timeout'));
-            }, 3000); // 3초로 단축
+            }, 2000); // 2초로 단축
 
             testWs.onopen = () => {
                 clearTimeout(timeout);
@@ -225,9 +223,9 @@ ipcMain.handle('check-android-server-status', async () => {
 
 debugLog('IPC Handlers registered (initial load).', 'INFO');
 
-// --- 카메라 연결 요청 핸들러 ---
+// --- 🚀 자동 카메라 연결 요청 핸들러 (프롬프트 제거) ---
 ipcMain.on('camera-connect', async () => {
-    debugLog('camera-connect 이벤트 수신 (웹소켓 연결 시도)', 'INFO');
+    debugLog('🚀 camera-connect 이벤트 수신 (자동 연결 시도)', 'INFO');
 
     // 🔧 이미 연결 중인 경우 무시
     if (isReconnecting) {
@@ -237,7 +235,7 @@ ipcMain.on('camera-connect', async () => {
 
     // 🔧 이미 연결된 경우 상태 확인만
     if (ws && ws.readyState === WebSocket.OPEN) {
-        debugLog('이미 연결되어 있음 - 상태 확인만 수행', 'INFO');
+        debugLog('✅ 이미 연결되어 있음 - 상태 확인만 수행', 'INFO');
         updateConnectionStatus(true, 'PC와 연결됨');
         return;
     }
@@ -246,14 +244,8 @@ ipcMain.on('camera-connect', async () => {
     connectionNotificationSent = false;
     connectionAttempts++;
 
-    // 🌐 먼저 네트워크 연결 테스트
-    const networkTest = await testNetworkConnection();
-    if (!networkTest.websocket && !networkTest.http) {
-        debugLog('Both WebSocket and HTTP connections failed', 'ERROR');
-        updateConnectionStatus(false, 'Network connection failed. Check Android device IP and ports.');
-        return;
-    }
-
+    // 🚀 바로 연결 시도 (네트워크 테스트 생략으로 더 빠른 연결)
+    debugLog('🚀 네트워크 테스트 생략하고 바로 연결 시도', 'INFO');
     connectToAndroidApp();
 });
 
@@ -294,7 +286,7 @@ ipcMain.on('clear-android-video', async (event, androidFileName: string) => {
 });
 
 /**
- * Android 앱의 웹소켓 서버에 연결을 시도합니다.
+ * 🚀 Android 앱의 웹소켓 서버에 자동 연결을 시도합니다. (프롬프트 없음)
  */
 function connectToAndroidApp() {
     if (_mainWindow === null) {
@@ -318,17 +310,17 @@ function connectToAndroidApp() {
     // 🔧 기존 WebSocket 정리
     cleanupWebSocket();
 
-    debugLog(`웹소켓 서버 ${ANDROID_WS_URL}에 연결 시도... (attempt #${connectionAttempts})`, 'INFO');
+    debugLog(`🚀 웹소켓 서버 ${ANDROID_WS_URL}에 자동 연결 시도... (attempt #${connectionAttempts})`, 'INFO');
     isReconnecting = true;
 
     ws = new WebSocket(ANDROID_WS_URL);
 
-    // 🔧 연결 타임아웃 설정
+    // 🔧 연결 타임아웃 설정 (단축)
     connectionTimeout = setTimeout(() => {
         debugLog('WebSocket connection timeout', 'ERROR');
         cleanupWebSocket();
         updateConnectionStatus(false, '연결 타임아웃');
-    }, 10000); // 10초 타임아웃
+    }, 5000); // 5초 타임아웃으로 단축
 
     ws.onopen = () => {
         if (connectionTimeout) {
@@ -336,28 +328,21 @@ function connectToAndroidApp() {
             connectionTimeout = null;
         }
 
-        debugLog('웹소켓 연결 성공!', 'INFO');
+        debugLog('✅ 웹소켓 자동 연결 성공!', 'INFO');
         isReconnecting = false;
-        updateConnectionStatus(true, 'PC와 연결되었습니다');
+        updateConnectionStatus(true, 'PC와 자동 연결되었습니다');
 
-        // 안정적인 연결로 간주하기 위해 잠시 대기
+        // 🚀 연결 즉시 안정화
+        connectionAttempts = 0; // 성공하면 카운터 리셋
+        cameraConnected = true;
+        
+        // 🔧 연결 확인용 ping 전송 (선택사항)
         setTimeout(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                connectionAttempts = 0; // 성공하면 카운터 리셋
-                cameraConnected = true;
-                debugLog('연결 안정화 완료', 'INFO');
+                sendMessageToAndroid('ping', { timestamp: Date.now() });
+                debugLog('🏓 연결 확인용 ping 전송', 'INFO');
             }
-        }, 1000); // 1초 후 안정화 확인
-
-        function sendMessageToAndroid(channel: string, payload: object = {}) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const message = { channel, payload };
-                ws.send(JSON.stringify(message));
-                debugLog(`Android로 메시지 전송: ${JSON.stringify(message)}`, 'INFO');
-            } else {
-                debugLog('웹소켓이 아직 연결되지 않았습니다.', 'WARN');
-            }
-        }
+        }, 500);
     };
 
     ws.onmessage = async (event) => {
@@ -384,30 +369,18 @@ function connectToAndroidApp() {
                     break;
 
                 case 'pong':
-                    debugLog(`🏓 Pong received`); // 로그 줄이기
+                    debugLog(`🏓 Pong received from Android`); // 로그 줄이기
                     break;
 
                 case 'camera-connect-reply':
                     if (data?.success === true) {
-                        debugLog('✅ 연결 성공', 'INFO');
-                        updateConnectionStatus(true, 'PC와 연결되었습니다');
-                        // Reset connection attempts after successful connection
+                        debugLog('✅ Android에서 자동 연결 승인됨', 'INFO');
+                        updateConnectionStatus(true, 'PC와 자동 연결되었습니다');
                         connectionAttempts = 0;
                         isReconnecting = false;
                     } else {
-                        debugLog(`❌ 연결 실패: ${data?.message || '이유 미지정'}`, 'ERROR');
-                        updateConnectionStatus(false, `연결 실패: ${data?.message || '이유 미지정'}`);
-                        // Attempt to reconnect if connection fails
-                        if (connectionAttempts < 3) {
-                            const retryDelay = Math.min(3000 + (connectionAttempts * 3000), 10000);
-                            debugLog(` CONNECTION ATTEMPT ${connectionAttempts + 1}/3: Retrying in ${retryDelay}ms`);
-                            setTimeout(() => {
-                                if (!cameraConnected) {
-                                    debugLog('Attempting to reconnect...');
-                                    connectToAndroidApp();
-                                }
-                            }, retryDelay);
-                        }
+                        debugLog(`❌ Android 연결 거부: ${data?.message || '이유 미지정'}`, 'ERROR');
+                        updateConnectionStatus(false, `Android 연결 거부: ${data?.message || '이유 미지정'}`);
                     }
                     break;
 
@@ -435,18 +408,18 @@ function connectToAndroidApp() {
         debugLog(`웹소켓 연결 종료: 코드 ${event.code}, 이유: ${event.reason}`, 'WARN');
         ws = null;
         isReconnecting = false;
-        cameraConnected = false; // 연결이 끊어졌을 때 cameraConnected도 false로 설정
+        cameraConnected = false;
         updateConnectionStatus(false, '연결이 끊어졌습니다');
 
-        // 🔧 재연결 로직 개선 - 즉시 재연결 시도
-        const retryDelay = 1000; // 1초 딜레이
-        debugLog(`1초 후 재연결 시도...`, 'INFO');
+        // 🔧 자동 재연결 로직
+        const retryDelay = 2000; // 2초 딜레이
+        debugLog(`${retryDelay/1000}초 후 자동 재연결 시도...`, 'INFO');
 
         setTimeout(() => {
             if (!cameraConnected) { // 아직 연결되지 않은 경우에만
-                debugLog('웹소켓 재연결 시도...', 'INFO');
+                debugLog('웹소켓 자동 재연결 시도...', 'INFO');
                 connectionNotificationSent = false;
-                connectionAttempts = 0; // 연결이 끊어질 때마다 카운터 리셋
+                connectionAttempts = 0;
                 connectToAndroidApp();
             }
         }, retryDelay);
@@ -461,7 +434,7 @@ function connectToAndroidApp() {
 
 // 🔧 비디오 저장 처리 함수 분리
 async function handleVideoSaved(androidFileName: string) {
-    debugLog(`🎬 Android 녹화 완료! 파일 다운로드 시작: ${androidFileName}`, 'INFO');
+    debugLog(`🎬 Android 녹화 완료! 파일 자동 다운로드 시작: ${androidFileName}`, 'INFO');
 
     const downloadResult = await copyVideoFromAndroid(androidFileName);
 
@@ -474,7 +447,7 @@ async function handleVideoSaved(androidFileName: string) {
         });
 
         // Android에 파일 삭제 요청
-        debugLog(`🗑️ Android 원본 파일 삭제 요청: ${androidFileName}`);
+        debugLog(`🗑️ Android 원본 파일 자동 삭제 요청: ${androidFileName}`);
         sendMessageToAndroid('deleteFile', { fileName: androidFileName }); 
     } else {
         debugLog(`❌ 파일 다운로드 실패: ${downloadResult.error}`, 'ERROR');
