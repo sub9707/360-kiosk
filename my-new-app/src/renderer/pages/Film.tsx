@@ -29,7 +29,7 @@ const Film: React.FC = () => {
     // 🐛 디버깅을 위한 상태 추가
     const [debugInfo, setDebugInfo] = useState<string[]>([]);
     const [networkTest, setNetworkTest] = useState<NetworkTestResult | null>(null);
-    const [showDebugPanel, setShowDebugPanel] = useState(true); // 디버깅 패널 표시 여부
+    const [showDebugPanel, setShowDebugPanel] = useState(false); // 기본값 false로 변경 (프로덕션 환경)
 
     // 프로그레스 바를 위한 상태 (15초 제한)
     const [timeLeft, setTimeLeft] = useState(15);
@@ -37,6 +37,9 @@ const Film: React.FC = () => {
 
     // 🔥 중복 다운로드 방지를 위한 상태
     const [downloadCompleted, setDownloadCompleted] = useState(false);
+
+    // 🚀 자동 연결 상태 표시
+    const [autoConnectionStatus, setAutoConnectionStatus] = useState('카메라 자동 연결 중...');
 
     // 🐛 디버깅 로그 추가 함수
     const addDebugLog = (message: string) => {
@@ -46,14 +49,15 @@ const Film: React.FC = () => {
         setDebugInfo(prev => [...prev.slice(-12), logMessage]); // 최대 13개까지 유지
     };
 
-    // 재연결 버튼 클릭 시 호출할 함수
-    const handleReconnect = () => {
-        setEditingState('대기중'); // UI 상태 초기화
-        setIsConnecting(true);   // 로딩 스피너 표시
-        // 새로 만든 'reconnect-to-camera' 핸들러 호출
+    // 🚀 자동 재연결 함수 (프롬프트 없이)
+    const handleAutoReconnect = () => {
+        setEditingState('대기중');
+        setIsConnecting(true);
+        setConnectError(false);
+        setAutoConnectionStatus('카메라 자동 재연결 중...');
+        addDebugLog('🚀 자동 재연결 시도');
         ipcRenderer.invoke('reconnect-to-camera');
     };
-
 
     // 🔧 Android IP 변경 테스트
     const handleChangeAndroidIP = () => {
@@ -61,6 +65,7 @@ const Film: React.FC = () => {
         if (newIP && newIP.trim()) {
             addDebugLog(`IP 주소 변경 요청: ${newIP.trim()}`);
             ipcRenderer.send('change-android-ip', newIP.trim());
+            setAutoConnectionStatus('새 IP로 자동 연결 중...');
         }
     };
 
@@ -74,11 +79,14 @@ const Film: React.FC = () => {
                 if (result.fileCount !== undefined) {
                     addDebugLog(`📁 서버 파일 개수: ${result.fileCount}개`);
                 }
+                setAutoConnectionStatus('Android 서버 정상 - 자동 연결 가능');
             } else {
                 addDebugLog(`❌ Android 서버 확인 실패: ${result.error}`);
+                setAutoConnectionStatus(`Android 서버 오류: ${result.error}`);
             }
         } catch (error) {
             addDebugLog(`Android 서버 확인 오류: ${error}`);
+            setAutoConnectionStatus('Android 서버 확인 실패');
         }
     };
 
@@ -97,9 +105,10 @@ const Film: React.FC = () => {
         setEditingState('대기중');
         setRecordedPath(null);
         setAndroidFileName(null);
-        setDownloadCompleted(false); // 🔥 다운로드 상태 초기화
+        setDownloadCompleted(false);
+        setAutoConnectionStatus('카메라 자동 연결 중...');
 
-        addDebugLog('카메라 연결 요청 시작');
+        addDebugLog('🚀 카메라 자동 연결 요청 시작');
         ipcRenderer.send("camera-connect");
     };
 
@@ -114,7 +123,7 @@ const Film: React.FC = () => {
         setProgress(0);
         setIsRecording(true);
         setEditingState('촬영 중');
-        setDownloadCompleted(false); // 🔥 새 촬영 시작 시 다운로드 상태 초기화
+        setDownloadCompleted(false);
 
         ipcRenderer.send("camera-record-start");
     };
@@ -132,7 +141,7 @@ const Film: React.FC = () => {
         setEditingState('대기중');
         setTimeLeft(15);
         setProgress(0);
-        setDownloadCompleted(false); // 🔥 재촬영 시 다운로드 상태 초기화
+        setDownloadCompleted(false);
 
         // 로컬 PC 파일 삭제
         if (recordedPath) {
@@ -175,12 +184,12 @@ const Film: React.FC = () => {
             alert(`녹화된 영상이 없습니다. 먼저 촬영해주세요.
 
 🔍 문제 해결 방법:
-1. 네트워크 테스트로 Android 연결 확인
-2. Android 앱이 실행 중인지 확인
+1. 디버그 패널에서 네트워크 상태 확인
+2. Android 앱이 실행 중인지 확인  
 3. 같은 WiFi 네트워크에 연결되어 있는지 확인
 4. Android IP 주소가 올바른지 확인
 
-디버깅 정보를 확인하거나 네트워크 테스트를 해보세요.`);
+자동 재연결을 시도하거나 디버그 패널을 확인해보세요.`);
             return;
         }
 
@@ -301,16 +310,17 @@ const Film: React.FC = () => {
     useEffect(() => {
         ipcRenderer.send('set-main-window');
 
-        // 🔧 초기 로드 시에만 카메라 연결 시도
+        // 🚀 초기 로드 시에만 자동 카메라 연결 시도
         if (editingState === '대기중') {
+            addDebugLog('🚀 페이지 로드 - 자동 카메라 연결 시도');
             handleConnectCamera();
         } else {
             addDebugLog('🔒 초기 연결 생략 - 이미 진행 중인 작업 있음');
         }
 
-        // 카메라 연결 응답 처리 (촬영 완료 상태 보존)
+        // 🚀 카메라 연결 응답 처리 (자동 연결 모드)
         const handleCameraConnectReply = (_event: any, success: boolean, errorMessage?: string) => {
-            addDebugLog(`연결 응답: ${success ? '성공' : '실패'} ${errorMessage || ''}`);
+            addDebugLog(`🚀 자동 연결 응답: ${success ? '성공' : '실패'} ${errorMessage || ''}`);
 
             // 🔧 이미 촬영이 완료된 상태에서는 UI 상태를 변경하지 않음
             if (editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료') {
@@ -319,9 +329,11 @@ const Film: React.FC = () => {
                 if (success) {
                     setIsConnected(true);
                     setConnectError(false);
+                    setAutoConnectionStatus('PC와 자동 연결됨');
                 } else {
                     setIsConnected(false);
                     setConnectError(true);
+                    setAutoConnectionStatus(`자동 연결 실패: ${errorMessage || '알 수 없는 오류'}`);
                 }
                 return;
             }
@@ -331,24 +343,13 @@ const Film: React.FC = () => {
                 setIsConnected(true);
                 setConnectError(false);
                 setEditingState('대기중');
-                // 🔧 성공 시 알림 제거 (UI에서 상태 확인 가능)
-                addDebugLog('✅ 카메라 연결 성공');
+                setAutoConnectionStatus('PC와 자동 연결됨');
+                addDebugLog('✅ 카메라 자동 연결 성공');
             } else {
                 setIsConnected(false);
                 setConnectError(true);
-                addDebugLog(`❌ 카메라 연결 실패: ${errorMessage || '알 수 없는 오류'}`);
-
-                // 🔧 실패 시에만 alert 표시 (촬영 완료 상태가 아닐 때만)
-                if (editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료') {
-                    const fullMessage = `카메라 연결 실패: ${errorMessage || '알 수 없는 오류'}
-
-🔍 문제 해결 방법:
-• Android 앱이 실행 중인지 확인
-• PC와 Android가 같은 WiFi에 연결되어 있는지 확인  
-• Android IP 주소가 올바른지 확인
-• 네트워크 테스트를 실행해보세요`;
-                    alert(fullMessage);
-                }
+                setAutoConnectionStatus(`자동 연결 실패: ${errorMessage || '알 수 없는 오류'}`);
+                addDebugLog(`❌ 카메라 자동 연결 실패: ${errorMessage || '알 수 없는 오류'}`);
             }
         };
 
@@ -412,7 +413,7 @@ const Film: React.FC = () => {
 • 네트워크 연결 불안정
 
 해결 방법:
-• 네트워크 테스트 실행
+• 자동 재연결 버튼 클릭
 • Android 앱 재시작
 • WiFi 연결 확인`;
                 alert(errorMessage);
@@ -442,12 +443,12 @@ const Film: React.FC = () => {
                     <Link to={'/'} className={styles.homeBtn}><img src={HomeIcon} alt="Home" /></Link>
                     <div className={styles.status}>
                         {isConnecting
-                            ? '카메라 연결 상태 확인중...'
+                            ? autoConnectionStatus
                             : connectError
-                                ? '카메라 연결 실패'
+                                ? '카메라 자동 연결 실패'
                                 : editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료'
                                     ? `✅ 촬영 완료 (${editingState})`
-                                    : '카메라 연결됨'}
+                                    : '카메라 자동 연결됨'}
                     </div>
                     {/* 🐛 디버깅 패널 토글 버튼 */}
                     <button
@@ -456,7 +457,7 @@ const Film: React.FC = () => {
                             marginLeft: '10px',
                             padding: '5px 10px',
                             fontSize: '12px',
-                            background: '#007acc',
+                            background: showDebugPanel ? '#FF5722' : '#007acc',
                             color: 'white',
                             border: 'none',
                             borderRadius: '3px',
@@ -526,6 +527,7 @@ const Film: React.FC = () => {
                         <div>editingState: <span style={{ color: '#FFB74D' }}>{editingState}</span></div>
                         <div>isRecording: <span style={{ color: isRecording ? '#4CAF50' : '#f44336' }}>{isRecording.toString()}</span></div>
                         <div>downloadCompleted: <span style={{ color: downloadCompleted ? '#4CAF50' : '#f44336' }}>{downloadCompleted.toString()}</span></div>
+                        <div>autoConnectionStatus: <span style={{ color: '#81C784' }}>{autoConnectionStatus}</span></div>
                     </div>
 
                     {/* 🌐 네트워크 테스트 결과 */}
@@ -552,27 +554,35 @@ const Film: React.FC = () => {
             <div className={styles.instruction}>
                 <div className={styles.instructionWrapper}>
 
-                    {/* 카메라 연결중일 때 스피너 표시 */}
+                    {/* 🚀 카메라 자동 연결중일 때 스피너 표시 */}
                     {isConnecting && (
                         <div className={styles.connectingStatus}>
                             <Spinner />
-                            <p>카메라 연결 중...</p>
+                            <p>🚀 카메라 자동 연결 중...</p>
+                            <p style={{ fontSize: '14px', color: '#666' }}>Android 앱과 자동으로 연결됩니다</p>
                         </div>
                     )}
 
-                    {/* 연결 실패 시 재시도 버튼 (촬영 완료 상태가 아닐 때만) */}
+                    {/* 🚀 자동 연결 실패 시 재시도 버튼 (촬영 완료 상태가 아닐 때만) */}
                     {connectError && !isConnecting && editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료' && (
                         <div className={styles.connectError}>
-                            <p>카메라 연결에 실패했습니다</p>
+                            <p>🚀 카메라 자동 연결에 실패했습니다</p>
                             <div style={{ marginTop: '10px' }}>
-                                <button onClick={handleReconnect}>카메라 재연결</button>
+                                <button onClick={handleAutoReconnect}>🔄 자동 재연결</button>
                             </div>
+                            <p style={{ fontSize: '12px', marginTop: '10px', color: '#666' }}>
+                                Android 앱이 실행 중인지 확인하고<br/>
+                                같은 WiFi 네트워크에 연결되어 있는지 확인해주세요
+                            </p>
                         </div>
                     )}
 
                     {/* 연결 완료 & 촬영 대기 상태 */}
                     {isConnected && !isRecording && editingState === '대기중' && !isConnecting && (
-                        <button onClick={handleStartRecording}>🎬 촬영 시작</button>
+                        <div>
+                            <p style={{ marginBottom: '15px', color: '#4CAF50' }}>✅ 카메라가 자동으로 연결되었습니다</p>
+                            <button onClick={handleStartRecording}>🎬 촬영 시작</button>
+                        </div>
                     )}
 
                     {/* 촬영 중 */}
@@ -606,10 +616,10 @@ const Film: React.FC = () => {
                                 </div>
                             )}
                             {editingState === '촬영 완료' && (
-                                <p>촬영이 완료되었습니다</p>
+                                <p>✅ 촬영이 완료되었습니다</p>
                             )}
                             {editingState === '촬영 실패' && (
-                                <p>촬영에 실패했습니다</p>
+                                <p>❌ 촬영에 실패했습니다</p>
                             )}
                             {editingState === '촬영 완료' && (
                                 <>
