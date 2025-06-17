@@ -3,8 +3,8 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
 import './IPC/DriveControl';
-// import './IPC/CameraControl';
 import './IPC/MobileControl';
+import './IPC/VideoControl';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -20,6 +20,7 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity:false
     },
     fullscreen: true,
     resizable: true
