@@ -292,7 +292,8 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
 ipcMain.handle('get-qr-blob', async (_event, qrPath: string) => {
   try {
     console.log('🏷️ Reading QR blob from:', qrPath);
-
+    
+    // 파일 존재 확인
     if (!await fsPromises.access(qrPath, fsPromises.constants.F_OK).then(() => true).catch(() => false)) {
       console.error('❌ QR file not found:', qrPath);
       return { success: false, error: 'QR file not found' };
