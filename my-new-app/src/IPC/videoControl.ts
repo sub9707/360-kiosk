@@ -11,6 +11,88 @@ const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
 // Helper function to get ffmpeg path
 const getFfmpegPath = () => getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
 
+// 🆕 배경 영상용 최신 edited 비디오 찾기
+ipcMain.handle('get-latest-background-video', async () => {
+    try {
+        console.log('🎬 [VideoControl] 배경 영상용 최신 비디오 검색 시작');
+        
+        // 베이스 디렉토리 존재 확인
+        if (!await fsPromises.access(VIDEO_SAVE_BASE_DIR).then(() => true).catch(() => false)) {
+            console.warn('⚠️ [VideoControl] 베이스 디렉토리가 존재하지 않음:', VIDEO_SAVE_BASE_DIR);
+            return { success: false, useDefault: true, error: 'Base directory not found' };
+        }
+
+        // 날짜 폴더들 가져오기 (YYYYMMDD 형식만)
+        const entries = await fsPromises.readdir(VIDEO_SAVE_BASE_DIR, { withFileTypes: true });
+        const dateFolders = entries
+            .filter(dirent => dirent.isDirectory() && /^\d{8}$/.test(dirent.name))
+            .map(dirent => dirent.name)
+            .sort((a, b) => b.localeCompare(a)); // 최신 날짜 순으로 정렬
+
+        console.log('📁 [VideoControl] 발견된 날짜 폴더들:', dateFolders);
+
+        if (dateFolders.length === 0) {
+            console.warn('⚠️ [VideoControl] 날짜 폴더가 없음');
+            return { success: false, useDefault: true, error: 'No date folders found' };
+        }
+
+        // 각 날짜 폴더에서 edited_ 비디오 찾기 (최신 날짜부터)
+        for (const dateFolder of dateFolders) {
+            const folderPath = path.join(VIDEO_SAVE_BASE_DIR, dateFolder);
+            console.log(`🔍 [VideoControl] ${dateFolder} 폴더 검색 중...`);
+
+            try {
+                const files = await fsPromises.readdir(folderPath);
+                
+                // edited_VIDEO_*.mp4 파일들 필터링 및 정렬
+                const editedVideos = files
+                    .filter(file => 
+                        file.startsWith('edited_VIDEO_') && 
+                        file.endsWith('.mp4') &&
+                        /^edited_VIDEO_\d{8}_\d{6}\.mp4$/.test(file)
+                    )
+                    .sort((a, b) => b.localeCompare(a)); // 최신 시간 순으로 정렬
+
+                console.log(`📹 [VideoControl] ${dateFolder}에서 발견된 편집 영상들:`, editedVideos);
+
+                if (editedVideos.length > 0) {
+                    const latestVideo = editedVideos[0];
+                    const videoPath = path.join(folderPath, latestVideo);
+                    
+                    // 파일 실제 존재 확인
+                    const exists = await fsPromises.access(videoPath).then(() => true).catch(() => false);
+                    if (exists) {
+                        const stats = await fsPromises.stat(videoPath);
+                        if (stats.size > 0) {
+                            console.log(`✅ [VideoControl] 최신 배경 영상 발견: ${videoPath}`);
+                            return { 
+                                success: true, 
+                                videoPath: videoPath,
+                                fileName: latestVideo,
+                                dateFolder: dateFolder,
+                                useDefault: false
+                            };
+                        } else {
+                            console.warn(`⚠️ [VideoControl] 파일이 비어있음: ${videoPath}`);
+                        }
+                    } else {
+                        console.warn(`⚠️ [VideoControl] 파일이 존재하지 않음: ${videoPath}`);
+                    }
+                }
+            } catch (folderError: any) {
+                console.warn(`⚠️ [VideoControl] ${dateFolder} 폴더 읽기 오류:`, folderError.message);
+                continue; // 다음 폴더로 계속
+            }
+        }
+
+        console.warn('⚠️ [VideoControl] 조건에 맞는 편집 영상을 찾을 수 없음');
+        return { success: false, useDefault: true, error: 'No suitable edited videos found' };
+
+    } catch (error: any) {
+        console.error('❌ [VideoControl] 배경 영상 검색 중 오류:', error);
+        return { success: false, useDefault: true, error: error.message };
+    }
+});
 
 // Get directory contents (folders or videos with thumbnails)
 ipcMain.handle('get-directory-contents', async (_event, directoryPath: string) => {
