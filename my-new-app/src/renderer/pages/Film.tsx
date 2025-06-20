@@ -181,15 +181,6 @@ const Film: React.FC = () => {
 
         if (!recordedPath) {
             addDebugLog('❌ 편집 실패: recordedPath가 null');
-            alert(`녹화된 영상이 없습니다. 먼저 촬영해주세요.
-
-🔍 문제 해결 방법:
-1. 디버그 패널에서 네트워크 상태 확인
-2. Android 앱이 실행 중인지 확인  
-3. 같은 WiFi 네트워크에 연결되어 있는지 확인
-4. Android IP 주소가 올바른지 확인
-
-자동 재연결을 시도하거나 디버그 패널을 확인해보세요.`);
             return;
         }
 
@@ -213,58 +204,6 @@ const Film: React.FC = () => {
             addDebugLog(`편집 IPC 오류: ${error}`);
             setEditingState('촬영 완료');
             alert('알 수 없는 오류가 발생했습니다.');
-        }
-    };
-
-    // 🚀 자동으로 최신 파일 다운로드하는 함수 (수동 테스트용으로만 사용)
-    const handleManualDownloadLatestFile = async () => {
-        try {
-            addDebugLog('🔍 수동 다운로드: Android 파일 목록 확인 중...');
-
-            // 1. 네트워크 테스트로 파일 목록 가져오기
-            const networkResult = await ipcRenderer.invoke('test-network-connection');
-
-            if (!networkResult.http) {
-                addDebugLog('❌ 수동 다운로드 실패: HTTP 연결 불가');
-                alert('Android HTTP 서버에 연결할 수 없습니다.');
-                return;
-            }
-
-            if (!networkResult.fileList || networkResult.fileList.length === 0) {
-                addDebugLog('❌ 수동 다운로드 실패: Android에 파일이 없음');
-                alert('Android에 다운로드할 파일이 없습니다.');
-                return;
-            }
-
-            // 2. 가장 최신 파일 선택 (파일명 정렬)
-            const sortedFiles = networkResult.fileList.sort((a: string, b: string) => b.localeCompare(a));
-            const latestFileName = sortedFiles[0];
-
-            addDebugLog(`🎬 수동 다운로드 대상: ${latestFileName}`);
-            addDebugLog(`📁 전체 파일 목록: ${networkResult.fileList.join(', ')}`);
-
-            // 3. 파일 다운로드 실행
-            const result = await ipcRenderer.invoke('copy-video-from-android', latestFileName);
-
-            if (result.success) {
-                addDebugLog(`✅ 수동 다운로드 성공: ${result.localVideoPath}`);
-                setRecordedPath(result.localVideoPath);
-                setAndroidFileName(latestFileName);
-                setEditingState('촬영 완료');
-                setDownloadCompleted(true);
-
-                // 🗑️ Android 원본 파일 삭제
-                addDebugLog(`🗑️ Android 원본 파일 삭제: ${latestFileName}`);
-                await ipcRenderer.invoke('clear-android-video', latestFileName);
-
-            } else {
-                addDebugLog(`❌ 수동 다운로드 실패: ${result.error}`);
-                alert(`수동 다운로드 실패: ${result.error}`);
-            }
-
-        } catch (error) {
-            addDebugLog(`❌ 수동 다운로드 오류: ${error}`);
-            alert(`수동 다운로드 중 오류가 발생했습니다: ${error}`);
         }
     };
 
