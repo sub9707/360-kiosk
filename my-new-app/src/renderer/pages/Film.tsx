@@ -26,13 +26,11 @@ const Film: React.FC = () => {
     const [recordedPath, setRecordedPath] = useState<string | null>(null);
     const [androidFileName, setAndroidFileName] = useState<string | null>(null);
 
-    // 🐛 디버깅을 위한 상태 추가
-    const [debugInfo, setDebugInfo] = useState<string[]>([]);
-    const [networkTest, setNetworkTest] = useState<NetworkTestResult | null>(null);
-    const [showDebugPanel, setShowDebugPanel] = useState(false); // 기본값 false로 변경 (프로덕션 환경)
+    // 🔥 영상 전송 상태 추가
+    const [isTransferring, setIsTransferring] = useState(false);
 
-    // 프로그레스 바를 위한 상태 (15초 제한)
-    const [timeLeft, setTimeLeft] = useState(15);
+    // 프로그레스 바를 위한 상태 (20초 제한)
+    const [timeLeft, setTimeLeft] = useState(20);
     const [progress, setProgress] = useState(0);
 
     // 🔥 중복 다운로드 방지를 위한 상태
@@ -46,7 +44,29 @@ const Film: React.FC = () => {
         const timestamp = new Date().toLocaleTimeString();
         const logMessage = `[${timestamp}] ${message}`;
         console.log(`🐛 ${logMessage}`);
-        setDebugInfo(prev => [...prev.slice(-12), logMessage]); // 최대 13개까지 유지
+    };
+
+    const handleGoHome = () => {
+        addDebugLog('🏠 홈으로 돌아가기 - 완전 상태 초기화');
+
+        // 모든 상태 초기화
+        setIsConnecting(false);
+        setConnectError(false);
+        setIsConnected(false);
+        setEditingState('대기중');
+        setIsRecording(false);
+        setIsTransferring(false);
+        setDownloadCompleted(false);
+        setRecordedPath(null);
+        setAndroidFileName(null);
+        setTimeLeft(20);
+        setProgress(0);
+
+        // MobileControl 상태도 리셋
+        ipcRenderer.send('reset-connection-state');
+
+        // 홈으로 이동
+        navigate('/');
     };
 
     // 🚀 자동 재연결 함수 (프롬프트 없이)
@@ -54,50 +74,17 @@ const Film: React.FC = () => {
         setEditingState('대기중');
         setIsConnecting(true);
         setConnectError(false);
+        setIsTransferring(false); // 🔥 전송 상태 초기화
         setAutoConnectionStatus('카메라 자동 재연결 중...');
         addDebugLog('🚀 자동 재연결 시도');
         ipcRenderer.invoke('reconnect-to-camera');
     };
 
-    // 🔧 Android IP 변경 테스트
-    const handleChangeAndroidIP = () => {
-        const newIP = prompt('Android 기기의 새로운 IP 주소를 입력하세요:', '192.168.219.102');
-        if (newIP && newIP.trim()) {
-            addDebugLog(`IP 주소 변경 요청: ${newIP.trim()}`);
-            ipcRenderer.send('change-android-ip', newIP.trim());
-            setAutoConnectionStatus('새 IP로 자동 연결 중...');
-        }
-    };
-
-    // 🔍 Android 서버 상태 직접 확인
-    const handleCheckAndroidServer = async () => {
-        addDebugLog('🔍 Android 서버 상태 직접 확인');
-        try {
-            const result = await ipcRenderer.invoke('check-android-server-status');
-            if (result.success) {
-                addDebugLog(`✅ Android 서버 응답: ${result.status}`);
-                if (result.fileCount !== undefined) {
-                    addDebugLog(`📁 서버 파일 개수: ${result.fileCount}개`);
-                }
-                setAutoConnectionStatus('Android 서버 정상 - 자동 연결 가능');
-            } else {
-                addDebugLog(`❌ Android 서버 확인 실패: ${result.error}`);
-                setAutoConnectionStatus(`Android 서버 오류: ${result.error}`);
-            }
-        } catch (error) {
-            addDebugLog(`Android 서버 확인 오류: ${error}`);
-            setAutoConnectionStatus('Android 서버 확인 실패');
-        }
-    };
-
     // --- IPC 송신 함수들 ---
 
     const handleConnectCamera = () => {
-        // 🔧 이미 촬영이 완료된 상태에서는 재연결하지 않음
-        if (editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료') {
-            addDebugLog('🔒 촬영 완료 상태에서 재연결 방지');
-            return;
-        }
+        // 조건부 체크 제거하고 무조건 초기화
+        addDebugLog('🚀 카메라 연결 요청 - 상태 강제 초기화');
 
         setIsConnecting(true);
         setConnectError(false);
@@ -106,9 +93,9 @@ const Film: React.FC = () => {
         setRecordedPath(null);
         setAndroidFileName(null);
         setDownloadCompleted(false);
+        setIsTransferring(false);
         setAutoConnectionStatus('카메라 연결 중...');
 
-        addDebugLog('카메라 연결 요청 시작');
         ipcRenderer.send("camera-connect");
     };
 
@@ -118,12 +105,13 @@ const Film: React.FC = () => {
             return;
         }
 
-        addDebugLog('🎬 녹화 시작 요청 (15초 제한)');
-        setTimeLeft(15);
+        addDebugLog('🎬 녹화 시작 요청 (20초 제한)');
+        setTimeLeft(20);
         setProgress(0);
         setIsRecording(true);
         setEditingState('촬영 중');
         setDownloadCompleted(false);
+        setIsTransferring(false); // 🔥 전송 상태 초기화
 
         ipcRenderer.send("camera-record-start");
     };
@@ -139,9 +127,10 @@ const Film: React.FC = () => {
         addDebugLog('재촬영 시작 - 상태 초기화');
         setIsRecording(false);
         setEditingState('대기중');
-        setTimeLeft(15);
+        setTimeLeft(20);
         setProgress(0);
         setDownloadCompleted(false);
+        setIsTransferring(false); // 🔥 전송 상태 초기화
 
         // 로컬 PC 파일 삭제
         if (recordedPath) {
@@ -184,6 +173,12 @@ const Film: React.FC = () => {
             return;
         }
 
+        // 🔥 이미 편집 중인 경우 중복 실행 방지
+        if (editingState === '편집중') {
+            addDebugLog('⚠️ 이미 편집 중 - 중복 실행 방지');
+            return;
+        }
+
         try {
             setEditingState('편집중');
             addDebugLog(`편집 시작: ${recordedPath}`);
@@ -217,15 +212,18 @@ const Film: React.FC = () => {
             interval = setInterval(() => {
                 setTimeLeft(prevTime => {
                     const newTime = prevTime - 1;
-                    setProgress(((15 - newTime) / 15) * 100);
+                    setProgress(((20 - newTime) / 20) * 100);
                     if (newTime <= 0) {
-                        addDebugLog('🎬 촬영 시간 초과 (렌더러 타이머 - 15초 완료)');
+                        addDebugLog('🎬 촬영 시간 초과 (렌더러 타이머 - 20초 완료)');
                         addDebugLog('📤 Android에 녹화 중지 명령 전송');
 
-                        // 🔧 15초 완료 시 실제로 Android에 녹화 중지 명령 전송
+                        // 🔧 20초 완료 시 실제로 Android에 녹화 중지 명령 전송
                         ipcRenderer.send("camera-record-stop");
 
                         setIsRecording(false);
+                        // 🔥 촬영 완료 후 전송 대기 상태로 변경
+                        setIsTransferring(true);
+                        setEditingState('영상 전송 대기');
 
                         // 🔥 자동 다운로드 로직 제거 - camera-record-complete 이벤트에서만 처리됨
                         addDebugLog('⏰ 타이머 완료 - camera-record-complete 이벤트를 대기합니다');
@@ -249,13 +247,53 @@ const Film: React.FC = () => {
     useEffect(() => {
         ipcRenderer.send('set-main-window');
 
-        // 🚀 초기 로드 시에만 자동 카메라 연결 시도
-        if (editingState === '대기중') {
-            addDebugLog('🚀 페이지 로드 - 자동 카메라 연결 시도');
-            handleConnectCamera();
-        } else {
-            addDebugLog('🔒 초기 연결 생략 - 이미 진행 중인 작업 있음');
-        }
+        const forceStateReset = () => {
+            addDebugLog('🔄 페이지 진입 - 강제 상태 초기화');
+            setIsConnecting(false);
+            setConnectError(false);
+            setIsConnected(false);
+            setEditingState('대기중');
+            setIsRecording(false);
+            setIsTransferring(false);
+            setDownloadCompleted(false);
+            setRecordedPath(null);
+            setAndroidFileName(null);
+            setAutoConnectionStatus('카메라 연결 준비중...');
+        };
+
+        forceStateReset();
+
+        // 🔧 연결 상태 확인 후 초기화 여부 결정
+        const checkConnectionAndInit = async () => {
+            try {
+                addDebugLog('🔍 기존 연결 상태 확인 시작');
+
+                // 🚀 MobileControl의 현재 연결 상태 확인
+                const connectionStatus = await ipcRenderer.invoke('check-connection-status');
+
+                if (connectionStatus && connectionStatus.isConnected) {
+                    addDebugLog('✅ 이미 연결된 상태 감지 - 자동 연결 시도 생략');
+                    setIsConnected(true);
+                    setIsConnecting(false);
+                    setConnectError(false);
+                    setEditingState('대기중');
+                    setAutoConnectionStatus('PC와 연결됨');
+                    return; // 🔥 이미 연결된 경우 추가 연결 시도하지 않음
+                } else {
+                    addDebugLog('❌ 연결되지 않은 상태 - 새로운 연결 시도');
+                }
+            } catch (error) {
+                addDebugLog(`⚠️ 연결 상태 확인 실패: ${error} - 새로운 연결 시도`);
+            }
+
+            // 🚀 연결되지 않은 경우에만 새로운 연결 시도
+            setTimeout(() => {
+                addDebugLog('🚀 상태 초기화 완료 - 카메라 연결 시도');
+                handleConnectCamera();
+            }, 500);
+        };
+
+        checkConnectionAndInit();
 
         // 🚀 카메라 연결 응답 처리 (자동 연결 모드)
         const handleCameraConnectReply = (_event: any, success: boolean, errorMessage?: string) => {
@@ -298,38 +336,57 @@ const Film: React.FC = () => {
             if (data.status === "started") {
                 setIsRecording(true);
                 setEditingState('촬영 중');
-                setTimeLeft(15);
+                setTimeLeft(20);
                 setProgress(0);
-                addDebugLog('🎬 녹화 시작됨 - 15초 타이머 가동');
+                setIsTransferring(false); // 🔥 전송 상태 해제
+                addDebugLog('🎬 녹화 시작됨 - 20초 타이머 가동');
             } else {
                 setIsRecording(false);
                 setEditingState('촬영 실패');
+                setIsTransferring(false); // 🔥 전송 상태 해제
                 alert(`녹화 시작 실패: ${data.error || '알 수 없는 오류'}`);
             }
         };
 
-        // 🐛 video-saved 이벤트 리스너 추가 (디버깅용)
+        // 🐛 video-saved 이벤트 리스너 추가 (디버깅용) - 🔥 전송 시작 신호로 활용
         const handleVideoSaved = (_event: any, data: any) => {
             addDebugLog(`🎬 Android에서 video-saved 이벤트 수신: ${JSON.stringify(data)}`);
+            // 🔥 Android에서 영상 저장 완료 신호를 받으면 전송 시작 상태로 변경
+            setIsTransferring(true);
+            setEditingState('영상 전송중');
+            addDebugLog('📤 Android 영상 저장 완료 - PC로 전송 시작');
         };
 
         // 🔍 Android 녹화 상태 변경 리스너 추가
         const handleCameraRecordingStatus = (_event: any, data: any) => {
             addDebugLog(`📹 Android 녹화 상태 변경: ${JSON.stringify(data)}`);
+
+            // 🔥 Android에서 녹화 중지 신호를 받으면 전송 대기 상태로 변경
+            if (data && data.isRecording === false) {
+                addDebugLog('📹 Android 녹화 중지 감지 - 영상 전송 대기 상태로 변경');
+                setIsRecording(false);
+                setIsTransferring(true);
+                setEditingState('영상 전송 대기');
+            }
         };
 
-        // 🔥 수정된 녹화 완료 응답 처리 (중복 방지)
+        // 🔥 수정된 녹화 완료 응답 처리 (중복 방지 강화)
+        let recordCompleteProcessed = false; // 🔥 중복 처리 방지 플래그
+
         const handleRecordComplete = (_event: any, result: { success: boolean, path?: string, androidPath?: string, error?: string }) => {
             addDebugLog(`🎬 녹화 완료 응답: ${JSON.stringify(result)}`);
 
-            // 🔥 이미 다운로드 완료된 경우 추가 처리하지 않음
-            if (downloadCompleted) {
-                addDebugLog('⚠️ 이미 다운로드 완료됨 - 중복 처리 방지');
+            // 🔥 **핵심 수정**: 이미 처리된 경우 또는 촬영 완료 상태라면 중복 처리하지 않음
+            if (recordCompleteProcessed || editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료') {
+                addDebugLog('⚠️ 이미 처리됨 또는 촬영 완료 상태 - 중복 camera-record-complete 이벤트 무시');
                 return;
             }
 
+            recordCompleteProcessed = true; // 🔥 처리 플래그 설정
+
             setIsRecording(false);
-            setTimeLeft(15);
+            setIsTransferring(false); // 🔥 전송 완료
+            setTimeLeft(20);
             setProgress(0);
 
             if (result.success && result.path) {
@@ -344,26 +401,20 @@ const Film: React.FC = () => {
                 setRecordedPath(null);
                 setAndroidFileName(null);
                 setDownloadCompleted(false);
-                const errorMessage = `촬영 중 오류가 발생했습니다: ${result.error || '알 수 없는 오류'}
-
-🔍 주요 원인:
-• Android에서 파일이 제대로 저장되지 않음
-• HTTP 서버 연결 문제 (404 오류)
-• 네트워크 연결 불안정
-
-해결 방법:
-• 자동 재연결 버튼 클릭
-• Android 앱 재시작
-• WiFi 연결 확인`;
-                alert(errorMessage);
             }
+
+            // 🔥 5초 후 플래그 리셋 (다음 촬영을 위해)
+            setTimeout(() => {
+                recordCompleteProcessed = false;
+                addDebugLog('🔄 녹화 완료 처리 플래그 리셋');
+            }, 5000);
         };
 
         // IPC 이벤트 리스너 등록
         ipcRenderer.on("camera-connect-reply", handleCameraConnectReply);
         ipcRenderer.on("camera-record-start-reply", handleRecordStartReply);
         ipcRenderer.on("camera-record-complete", handleRecordComplete);
-        ipcRenderer.on("video-saved", handleVideoSaved); // 🐛 디버깅용
+        ipcRenderer.on("video-saved", handleVideoSaved); // 🔥 전송 시작 신호로 활용
         ipcRenderer.on("camera-recording-status", handleCameraRecordingStatus); // 🔍 Android 녹화 상태
 
         return () => {
@@ -373,122 +424,28 @@ const Film: React.FC = () => {
             ipcRenderer.removeListener("video-saved", handleVideoSaved);
             ipcRenderer.removeListener("camera-recording-status", handleCameraRecordingStatus);
         };
-    }, [downloadCompleted]); // 🔥 downloadCompleted 의존성 추가
+    }, []);
 
     return (
         <div className={styles.container}>
             <div className={styles.menubar}>
                 <div className={styles.menubarWrapper}>
-                    <Link to={'/'} className={styles.homeBtn}><img src={HomeIcon} alt="Home" /></Link>
+                    <button onClick={handleGoHome} className={styles.homeBtn}>
+                        <img src={HomeIcon} alt="Home" />
+                    </button>
                     <div className={styles.status}>
                         {isConnecting
                             ? autoConnectionStatus
                             : connectError
                                 ? '카메라 연결 실패'
-                                : editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료'
-                                    ? `✅ 촬영 완료 (${editingState})`
-                                    : '카메라 연결됨'}
+                                : isTransferring
+                                    ? '영상 전송 중...'
+                                    : editingState === '촬영 완료' || editingState === '편집중' || editingState === '편집 완료'
+                                        ? `✅ 촬영 완료 (${editingState})`
+                                        : '카메라 연결됨'}
                     </div>
-                    {/* 🐛 디버깅 패널 토글 버튼 */}
-                    <button
-                        onClick={() => setShowDebugPanel(!showDebugPanel)}
-                        style={{
-                            marginLeft: '10px',
-                            padding: '5px 10px',
-                            fontSize: '12px',
-                            background: showDebugPanel ? '#FF5722' : '#007acc',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        🐛 {showDebugPanel ? '디버그 숨김' : '디버그 표시'}
-                    </button>
                 </div>
             </div>
-
-            {/* 🐛 디버깅 정보 패널 */}
-            {showDebugPanel && (
-                <div style={{
-                    position: 'fixed',
-                    top: '60px',
-                    right: '10px',
-                    background: 'rgba(0,0,0,0.95)',
-                    color: 'white',
-                    padding: '15px',
-                    fontSize: '11px',
-                    maxWidth: '500px',
-                    maxHeight: '500px',
-                    zIndex: 1000,
-                    borderRadius: '8px',
-                    border: '1px solid #333',
-                    overflow: 'auto'
-                }}>
-                    <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <strong>🐛 디버깅 정보</strong>
-                        <div>
-                            <button
-                                onClick={handleCheckAndroidServer}
-                                style={{
-                                    marginRight: '5px',
-                                    padding: '2px 6px',
-                                    fontSize: '10px',
-                                    background: '#FF9800',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                🔍 서버확인
-                            </button>
-                            <button
-                                onClick={handleChangeAndroidIP}
-                                style={{
-                                    padding: '2px 6px',
-                                    fontSize: '10px',
-                                    background: '#9C27B0',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                📡 IP변경
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style={{ marginBottom: '8px' }}>
-                        <div>recordedPath: <span style={{ color: recordedPath ? '#4CAF50' : '#f44336' }}>{recordedPath || 'null'}</span></div>
-                        <div>androidFileName: <span style={{ color: androidFileName ? '#4CAF50' : '#f44336' }}>{androidFileName || 'null'}</span></div>
-                        <div>editingState: <span style={{ color: '#FFB74D' }}>{editingState}</span></div>
-                        <div>isRecording: <span style={{ color: isRecording ? '#4CAF50' : '#f44336' }}>{isRecording.toString()}</span></div>
-                        <div>downloadCompleted: <span style={{ color: downloadCompleted ? '#4CAF50' : '#f44336' }}>{downloadCompleted.toString()}</span></div>
-                        <div>autoConnectionStatus: <span style={{ color: '#81C784' }}>{autoConnectionStatus}</span></div>
-                    </div>
-
-                    {/* 🌐 네트워크 테스트 결과 */}
-                    {networkTest && (
-                        <div style={{ marginBottom: '8px', padding: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                            <div><strong>🌐 네트워크 상태:</strong></div>
-                            <div>WebSocket: <span style={{ color: networkTest.websocket ? '#4CAF50' : '#f44336' }}>{networkTest.websocket ? '✅ 연결됨' : '❌ 실패'}</span></div>
-                            <div>HTTP Server: <span style={{ color: networkTest.http ? '#4CAF50' : '#f44336' }}>{networkTest.http ? '✅ 연결됨' : '❌ 실패'}</span></div>
-                            {networkTest.fileList && (
-                                <div>Android 파일: <span style={{ color: '#4CAF50' }}>{networkTest.fileList.length}개</span></div>
-                            )}
-                        </div>
-                    )}
-
-                    <hr style={{ margin: '8px 0', border: '0.5px solid #444' }} />
-                    <div style={{ maxHeight: '250px', overflow: 'auto', fontSize: '10px' }}>
-                        {debugInfo.map((log, index) => (
-                            <div key={index} style={{ marginBottom: '2px' }}>{log}</div>
-                        ))}
-                    </div>
-                </div>
-            )}
 
             <div className={styles.instruction}>
                 <div className={styles.instructionWrapper}>
@@ -502,7 +459,7 @@ const Film: React.FC = () => {
                     )}
 
                     {/* 🚀 자동 연결 실패 시 재시도 버튼 (촬영 완료 상태가 아닐 때만) */}
-                    {connectError && !isConnecting && editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료' && (
+                    {connectError && !isConnecting && editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료' && !isTransferring && (
                         <div className={styles.connectError}>
                             <p>카메라 연결에 실패했습니다</p>
                             <div style={{ marginTop: '10px' }}>
@@ -512,7 +469,7 @@ const Film: React.FC = () => {
                     )}
 
                     {/* 연결 완료 & 촬영 대기 상태 */}
-                    {isConnected && !isRecording && editingState === '대기중' && !isConnecting && (
+                    {isConnected && !isRecording && editingState === '대기중' && !isConnecting && !isTransferring && (
                         <div className={styles.centerMessage}>
                             <p style={{ marginBottom: '15px', color: '#4CAF50' }}>카메라가 연결되었습니다</p>
                             <button onClick={handleStartRecording}>촬영 시작</button>
@@ -520,7 +477,7 @@ const Film: React.FC = () => {
                     )}
 
                     {/* 촬영 중 */}
-                    {isRecording && editingState === '촬영 중' && (
+                    {isRecording && editingState === '촬영 중' && !isTransferring && (
                         <div className={styles.filmInProgress}>
                             <p>촬영 중</p>
                             <div className={styles.progressSection}>
@@ -540,8 +497,19 @@ const Film: React.FC = () => {
                         </div>
                     )}
 
+                    {/* 🔥 영상 전송 중 UI 추가 */}
+                    {isTransferring && (editingState === '영상 전송 대기' || editingState === '영상 전송중') && (
+                        <div className={styles.transferInProgress}>
+                            <Spinner />
+                            <p>영상 전송 중</p>
+                            <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
+                                Android에서 PC로 영상을 전송하고 있습니다...
+                            </p>
+                        </div>
+                    )}
+
                     {/* 촬영 완료됨 */}
-                    {!isRecording && ['촬영 완료', '편집중', '편집 완료', '촬영 실패'].includes(editingState) && !isConnecting && (
+                    {!isRecording && !isTransferring && ['촬영 완료', '편집중', '편집 완료', '촬영 실패'].includes(editingState) && !isConnecting && (
                         <div className={styles.filmComplete}>
                             {editingState === '편집중' && (
                                 <div className={styles.editingStatus}>

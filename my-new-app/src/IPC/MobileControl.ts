@@ -14,6 +14,7 @@ let _mainWindow: BrowserWindow | null = null;
 let ws: WebSocket | null = null; // 웹소켓 클라이언트 인스턴스
 
 let cameraConnected = false;
+let manualReset = false;
 
 // 🔧 연결 상태 관리 변수 강화
 let lastConnectionStatus = false;
@@ -23,9 +24,9 @@ let isReconnecting = false;
 let connectionTimeout: NodeJS.Timeout | null = null;
 
 // Android 웹소켓 서버 주소 (let으로 변경하여 동적 수정 가능)
-let ANDROID_WS_URL = 'ws://172.30.1.29:8080';
+let ANDROID_WS_URL = 'ws://192.168.219.102:8080';
 // Android HTTP 파일 서버 주소  
-let ANDROID_FILE_SERVER_URL = 'http://172.30.1.29:8081';
+let ANDROID_FILE_SERVER_URL = 'http://192.168.219.102:8081';
 
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
@@ -81,78 +82,11 @@ async function ensureVideoSaveDir() {
     }
 }
 
-// 🌐 네트워크 연결 테스트
-async function testNetworkConnection(): Promise<{ websocket: boolean, http: boolean, fileList?: string[] }> {
-    const result = { websocket: false, http: false, fileList: undefined as string[] | undefined };
-
-    // 1. HTTP 서버 연결 테스트
-    try {
-        debugLog('🌐 Testing HTTP connection...');
-        const response = await axios.get(`${ANDROID_FILE_SERVER_URL}/status`, { timeout: 3000 });
-        result.http = response.status === 200;
-        debugLog(`HTTP connection: ${result.http ? 'SUCCESS' : 'FAILED'}`, result.http ? 'INFO' : 'WARN');
-
-        // 파일 목록 가져오기
-        if (result.http) {
-            try {
-                const listResponse = await axios.get(`${ANDROID_FILE_SERVER_URL}/list`, { timeout: 3000 });
-                if (listResponse.data && listResponse.data.files) {
-                    result.fileList = listResponse.data.files.map((f: any) => f.name);
-                    debugLog(`Available files: ${result.fileList.length} files`);
-                }
-            } catch (listError) {
-                debugLog('Could not get file list', 'WARN');
-            }
-        }
-
-    } catch (httpError: any) {
-        debugLog(`HTTP connection failed: ${httpError.message}`, 'ERROR');
-    }
-
-    // 2. WebSocket 연결 테스트 (짧은 테스트)
-    try {
-        debugLog('🌐 Testing WebSocket connection...');
-        const testWs = new WebSocket(ANDROID_WS_URL);
-
-        await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                testWs.close();
-                reject(new Error('WebSocket connection timeout'));
-            }, 2000); // 2초로 단축
-
-            testWs.onopen = () => {
-                clearTimeout(timeout);
-                result.websocket = true;
-                testWs.close();
-                resolve();
-            };
-
-            testWs.onerror = (error) => {
-                clearTimeout(timeout);
-                reject(error);
-            };
-        });
-
-        debugLog(`WebSocket connection: SUCCESS`, 'INFO');
-
-    } catch (wsError: any) {
-        debugLog(`WebSocket connection failed: ${wsError.message}`, 'ERROR');
-    }
-
-    return result;
-}
-
 // IPC 핸들러 등록
 ipcMain.on('set-main-window', (event) => {
     _mainWindow = BrowserWindow.fromWebContents(event.sender);
     debugLog('Main window reference set from renderer.', 'INFO');
     ensureVideoSaveDir();
-});
-
-// 🌐 네트워크 테스트 핸들러 추가
-ipcMain.handle('test-network-connection', async () => {
-    debugLog('🌐 Network test requested from renderer', 'INFO');
-    return await testNetworkConnection();
 });
 
 // 🔧 Android IP 변경 핸들러
@@ -223,9 +157,29 @@ ipcMain.handle('check-android-server-status', async () => {
 
 debugLog('IPC Handlers registered (initial load).', 'INFO');
 
+// 🔍 현재 연결 상태 확인 핸들러 (Film.tsx에서 호출)
+ipcMain.handle('check-connection-status', async () => {
+    debugLog('🔍 연결 상태 확인 요청', 'INFO');
+    
+    const isConnected = ws && ws.readyState === WebSocket.OPEN;
+    const connectionInfo = {
+        isConnected: isConnected,
+        cameraConnected: cameraConnected,
+        connectionAttempts: connectionAttempts,
+        isReconnecting: isReconnecting,
+        lastConnectionStatus: lastConnectionStatus
+    };
+    
+    debugLog(`🔍 현재 연결 상태: ${JSON.stringify(connectionInfo)}`, 'INFO');
+    
+    return connectionInfo;
+});
+
 // --- 🚀 자동 카메라 연결 요청 핸들러 (프롬프트 제거) ---
 ipcMain.on('camera-connect', async () => {
     debugLog('🚀 camera-connect 이벤트 수신 (자동 연결 시도)', 'INFO');
+
+    manualReset = false;
 
     // 🔧 이미 연결 중인 경우 무시
     if (isReconnecting) {
@@ -285,6 +239,27 @@ ipcMain.on('clear-android-video', async (event, androidFileName: string) => {
     return { success: true };
 });
 
+ipcMain.on('reset-connection-state', () => {
+    debugLog('🔄 연결 상태 강제 리셋 요청', 'INFO');
+
+    manualReset = true;
+
+    // 모든 연결 관련 변수 초기화
+    lastConnectionStatus = false;
+    connectionNotificationSent = false;
+    connectionAttempts = 0;
+    isReconnecting = false;
+    cameraConnected = false;
+
+    // 기존 연결 정리
+    cleanupWebSocket();
+
+    setTimeout(() => {
+        manualReset = false;
+        debugLog('✅ 연결 상태 리셋 완료', 'INFO');
+    }, 1000);
+});
+
 /**
  * 🚀 Android 앱의 웹소켓 서버에 자동 연결을 시도합니다. (프롬프트 없음)
  */
@@ -335,7 +310,7 @@ function connectToAndroidApp() {
         // 🚀 연결 즉시 안정화
         connectionAttempts = 0; // 성공하면 카운터 리셋
         cameraConnected = true;
-        
+
         // 🔧 연결 확인용 ping 전송 (선택사항)
         setTimeout(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -405,24 +380,39 @@ function connectToAndroidApp() {
             connectionTimeout = null;
         }
 
-        debugLog(`웹소켓 연결 종료: 코드 ${event.code}, 이유: ${event.reason}`, 'WARN');
+        debugLog(`웹소켓 연결 종료: 코드 ${event.code}, 이유: ${event.reason || '명시되지 않음'}`, 'WARN');
         ws = null;
         isReconnecting = false;
         cameraConnected = false;
-        updateConnectionStatus(false, '연결이 끊어졌습니다');
 
-        // 🔧 자동 재연결 로직
-        const retryDelay = 2000; // 2초 딜레이
-        debugLog(`${retryDelay/1000}초 후 자동 재연결 시도...`, 'INFO');
+        let errorMessage = '연결이 끊어졌습니다';
+        if (event.code === 1006) {
+            errorMessage = 'Android 앱이 실행되지 않았거나 네트워크 오류';
+        } else if (event.code === 1000) {
+            errorMessage = '정상적으로 연결이 종료됨';
+        }
 
-        setTimeout(() => {
-            if (!cameraConnected) { // 아직 연결되지 않은 경우에만
-                debugLog('웹소켓 자동 재연결 시도...', 'INFO');
-                connectionNotificationSent = false;
-                connectionAttempts = 0;
-                connectToAndroidApp();
+        updateConnectionStatus(false, errorMessage);
+
+        // 🔧 자동 재연결 조건 강화 (정상 종료가 아니고, 시도 횟수 제한, 수동 리셋이 아닌 경우에만)
+        if (event.code !== 1000 && connectionAttempts < 2 && !manualReset) { // 최대 2회로 제한
+            const retryDelay = 3000;
+            debugLog(`${retryDelay / 1000}초 후 자동 재연결 시도... (${connectionAttempts + 1}/2)`, 'INFO');
+
+            setTimeout(() => {
+                if (!cameraConnected && !manualReset) {
+                    debugLog('웹소켓 자동 재연결 시도...', 'INFO');
+                    connectionNotificationSent = false;
+                    connectionAttempts++; // ❗ 중요: 증가시켜야 함 (0으로 리셋하면 안됨)
+                    connectToAndroidApp();
+                }
+            }, retryDelay);
+        } else {
+            debugLog('자동 재연결 조건 불충족 - 재연결 중단', 'INFO');
+            if (connectionAttempts >= 2) {
+                updateConnectionStatus(false, '재연결 실패 - 수동으로 재시도하세요');
             }
-        }, retryDelay);
+        }
     };
 
     ws.onerror = (error: any) => {
@@ -448,7 +438,7 @@ async function handleVideoSaved(androidFileName: string) {
 
         // Android에 파일 삭제 요청
         debugLog(`🗑️ Android 원본 파일 자동 삭제 요청: ${androidFileName}`);
-        sendMessageToAndroid('deleteFile', { fileName: androidFileName }); 
+        sendMessageToAndroid('deleteFile', { fileName: androidFileName });
     } else {
         debugLog(`❌ 파일 다운로드 실패: ${downloadResult.error}`, 'ERROR');
         _mainWindow?.webContents.send('camera-record-complete', {
