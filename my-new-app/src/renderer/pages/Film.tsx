@@ -8,11 +8,6 @@ import HomeIcon from '/src/renderer/assets/icons/home.svg';
 import Logo from '/src/renderer/assets/icons/logo.png';
 import Spinner from '../components/Spinner/Spinner';
 
-interface NetworkTestResult {
-    websocket: boolean;
-    http: boolean;
-    fileList?: string[];
-}
 
 const Film: React.FC = () => {
     const { ipcRenderer } = window.require("electron");
@@ -462,18 +457,16 @@ const Film: React.FC = () => {
                     {connectError && !isConnecting && editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료' && !isTransferring && (
                         <div className={styles.connectError}>
                             <p>카메라 연결에 실패했습니다</p>
-                            <div style={{ marginTop: '10px' }}>
-                                <button onClick={handleAutoReconnect}>재연결</button>
-                            </div>
+                            <button onClick={handleAutoReconnect}>재연결</button>
                         </div>
                     )}
 
                     {/* 연결 완료 & 촬영 대기 상태 */}
                     {isConnected && !isRecording && editingState === '대기중' && !isConnecting && !isTransferring && (
-                        <div className={styles.centerMessage}>
-                            <p style={{ marginBottom: '15px', color: '#4CAF50' }}>카메라가 연결되었습니다</p>
-                            <button onClick={handleStartRecording}>촬영 시작</button>
-                        </div>
+                    <div className={styles.centerMessage}>
+                        <p>카메라가 연결되었습니다</p>
+                        <button onClick={handleStartRecording}>촬영 시작</button>
+                    </div>
                     )}
 
                     {/* 촬영 중 */}

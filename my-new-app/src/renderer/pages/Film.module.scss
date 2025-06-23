@@ -142,6 +142,7 @@
                     font-weight: 700;
                     cursor: pointer;
                     transition: all 0.3s ease;
+                    margin-top: 1rem;
 
                     &:hover {
                         background-color: rgba(255, 107, 107, 0.1);
@@ -153,6 +154,40 @@
                     }
                 }
             }
+
+            .centerMessage{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                p {
+                    margin: 0;
+                    font-size: 4rem;
+                    color: whtie;
+                    font-weight: 500;
+                }
+
+                button {
+                    background-color: transparent;
+                    border-radius: 8px;
+                    width: 30rem;
+                    height: 10rem;
+                    font-size: 3.5rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    margin-top: 4rem;
+
+                    &:hover {
+                        background-color: rgba(255, 107, 107, 0.1);
+                        transform: scale(1.02);
+                    }
+
+                    &:active {
+                        background-color: rgba(255, 107, 107, 0.2);
+                    }
+                }
+            }
+
 
             // 편집중 상태 스타일
             .editingStatus {
