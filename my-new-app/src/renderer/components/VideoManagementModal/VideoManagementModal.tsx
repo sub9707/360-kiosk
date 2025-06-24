@@ -18,7 +18,7 @@ interface DirectoryEntry {
     thumbnail?: string;
 }
 
-const BASE_VIDEO_DIR = 'F:\\videos\\original';
+const BASE_VIDEO_DIR = import.meta.env.VITE_BASE_DIRECTORY;
 
 const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onClose }) => {
     const { ipcRenderer } = window.require("electron");
@@ -94,7 +94,9 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
     };
 
     // Format current path for display
+    console.log(1, BASE_VIDEO_DIR)
     const displayPath = currentPath.replace(BASE_VIDEO_DIR, '').replace(/\\/g, '/'); 
+    console.log(displayPath)
     const finalDisplayPath = displayPath === '' ? '/' : displayPath;
 
     if (!isOpen) return null;

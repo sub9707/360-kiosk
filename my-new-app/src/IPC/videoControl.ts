@@ -5,8 +5,11 @@ import { promises as fsPromises } from 'fs';
 import { exec } from 'child_process';
 import { getResourcePath } from '../utils/path-utils'; // Assuming you have path-utils
 
-// This is likely from DriveControl.ts, but moved here for central video management
-const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
+
+// --- Diagnostic additions ---
+console.log('--- VideoControl.ts module load start ---');
+console.log(`[VideoControl] RAW process.env.BASE_DIRECTORY: ${process.env.BASE_DIRECTORY}`);
+const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
 // Helper function to get ffmpeg path
 const getFfmpegPath = () => getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
@@ -197,75 +200,5 @@ ipcMain.handle('delete-video', async (_event, filePath: string) => {
     } catch (error) {
         console.error('Error deleting video:', error);
         throw error;
-    }
-});
-
-// The following IPC handlers are no longer directly used by the modal,
-// but might be used elsewhere or remain for compatibility.
-// If they are exclusively for the modal, they can be removed or integrated.
-
-// Get video files from directory (now covered by get-directory-contents)
-ipcMain.handle('get-video-files', async (_event, directory: string) => {
-    console.warn('[videoControl] `get-video-files` is deprecated. Use `get-directory-contents` instead.');
-    try {
-        const files = await fsPromises.readdir(directory);
-        const videoFiles = files.map(file => ({
-            name: file,
-            path: path.join(directory, file),
-            isVideo: file.endsWith('.mp4')
-        }));
-        return videoFiles;
-    } catch (error) {
-        console.error('Error fetching video files:', error);
-        throw error;
-    }
-});
-
-// Get latest edited video (still useful for other parts of the app)
-ipcMain.handle('get-latest-edited-video', async () => {
-    // ... (existing implementation)
-    const baseDir = 'F:/videos/original';
-    try {
-        const folders = fs.readdirSync(baseDir).filter((name) => {
-            const fullPath = path.join(baseDir, name);
-            return fs.statSync(fullPath).isDirectory() && /^\d{8}$/.test(name);
-        }).sort().reverse();
-
-        for (const folder of folders) {
-            const folderPath = path.join(baseDir, folder);
-            const files = fs.readdirSync(folderPath)
-                .filter(file => file.startsWith('edited_') && file.endsWith('.mp4'))
-                .sort()
-                .reverse();
-
-            if (files.length > 0) {
-                return path.join(folderPath, files[0]);
-            }
-        }
-        return null;
-    } catch (error) {
-        console.error('Error while fetching latest edited video:', error);
-        return null;
-    }
-});
-
-// Get list of date folders within VIDEO_SAVE_BASE_DIR (now covered by get-directory-contents)
-ipcMain.handle('get-video-folders', async () => {
-    console.warn('[videoControl] `get-video-folders` is deprecated. Use `get-directory-contents` instead.');
-    const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
-    try {
-        const entries = await fsPromises.readdir(VIDEO_SAVE_BASE_DIR, { withFileTypes: true });
-        const folders = entries
-            .filter(dirent => dirent.isDirectory() && /^\d{8}$/.test(dirent.name))
-            .map(dirent => dirent.name)
-            .sort((a, b) => b.localeCompare(a));
-        
-        return { success: true, folders };
-    } catch (error: any) {
-        console.error('❌ Error fetching video folders:', error);
-        if (error.code === 'ENOENT') {
-            return { success: true, folders: [], error: 'Base directory not found.' };
-        }
-        return { success: false, error: error.message };
     }
 });

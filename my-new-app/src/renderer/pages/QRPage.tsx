@@ -152,8 +152,11 @@ const QRPage: React.FC = () => {
         <img src={HomeIcon} />메인화면
       </Link>
 
-      <footer>
-        <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
+      <footer className={styles.footer}>
+        {
+          (import.meta.env.copyright == true && import.meta.env.copyright) &&
+          <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
+        }
       </footer>
     </div>
   );

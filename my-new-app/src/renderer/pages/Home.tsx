@@ -130,7 +130,7 @@ const Home: React.FC = () => {
 
             <footer className={styles.footer}>
                 {
-                    (process.env.footer === 'true' && process.env.footer) &&
+                    (import.meta.env.copyright == true && import.meta.env.copyright) &&
                     <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
                 }
             </footer>

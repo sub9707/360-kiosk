@@ -24,12 +24,12 @@ let isReconnecting = false;
 let connectionTimeout: NodeJS.Timeout | null = null;
 
 // Android 웹소켓 서버 주소 (let으로 변경하여 동적 수정 가능)
-let ANDROID_WS_URL = 'ws://192.168.219.102:8080';
+let ANDROID_WS_URL = `ws://${process.env.WIRELESS_ADDRESS}:8080`;
 // Android HTTP 파일 서버 주소  
-let ANDROID_FILE_SERVER_URL = 'http://192.168.219.102:8081';
+let ANDROID_FILE_SERVER_URL = `http://${process.env.WIRELESS_ADDRESS}:8081`;
 
 // PC에 영상 파일을 저장할 기본 디렉토리
-const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
+const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
 // 🐛 디버깅 로그 함수 (로그 레벨 추가)
 function debugLog(message: string, level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' = 'DEBUG', data?: any) {
