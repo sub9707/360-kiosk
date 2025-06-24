@@ -1,6 +1,6 @@
 // src/renderer/Film.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './Film.module.scss';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -20,6 +20,8 @@ const Film: React.FC = () => {
     const [editingState, setEditingState] = useState('대기중');
     const [recordedPath, setRecordedPath] = useState<string | null>(null);
     const [androidFileName, setAndroidFileName] = useState<string | null>(null);
+
+    const nextButtonRef = useRef<HTMLButtonElement>(null);
 
     // 🔥 영상 전송 상태 추가
     const [isTransferring, setIsTransferring] = useState(false);
@@ -421,6 +423,17 @@ const Film: React.FC = () => {
         };
     }, []);
 
+        // 페이지 업 키 이벤트 등록
+        useEffect(() => {
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.code === 'PageUp' && nextButtonRef.current) {
+                    nextButtonRef.current.click();
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }, []);
+
     return (
         <div className={styles.container}>
             <div className={styles.menubar}>
@@ -457,7 +470,7 @@ const Film: React.FC = () => {
                     {connectError && !isConnecting && editingState !== '촬영 완료' && editingState !== '편집중' && editingState !== '편집 완료' && !isTransferring && (
                         <div className={styles.connectError}>
                             <p>카메라 연결에 실패했습니다</p>
-                            <button onClick={handleAutoReconnect}>재연결</button>
+                            <button onClick={handleAutoReconnect} ref={nextButtonRef}>재연결</button>
                         </div>
                     )}
 
@@ -465,7 +478,7 @@ const Film: React.FC = () => {
                     {isConnected && !isRecording && editingState === '대기중' && !isConnecting && !isTransferring && (
                     <div className={styles.centerMessage}>
                         <p>카메라가 연결되었습니다</p>
-                        <button onClick={handleStartRecording}>촬영 시작</button>
+                        <button onClick={handleStartRecording} ref={nextButtonRef}>촬영 시작</button>
                     </div>
                     )}
 
@@ -519,7 +532,7 @@ const Film: React.FC = () => {
                             {editingState === '촬영 완료' && (
                                 <>
                                     <button onClick={handleRetake}>재촬영</button>
-                                    <button onClick={handleEditVideo}>편집 시작</button>
+                                    <button onClick={handleEditVideo} ref={nextButtonRef}>편집 시작</button>
                                 </>
                             )}
                         </div>

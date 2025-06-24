@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import path from 'path';
 
 /**
@@ -14,4 +15,18 @@ export function getResourcePath(relativePath: string, exePath: string): string {
   }
   // 개발 환경에서는 src/exe 하위의 파일을 직접 참조
   return path.resolve(__dirname, '../../src/exe', relativePath);
+}
+
+/**
+ * 개발 환경과 배포 환경에 따라 다른 env 경로를 반환합니다.
+ * @returns 최종 env 경로
+ */
+export function getEnvPath() {
+  if (process.env.NODE_ENV === 'production') {
+    // 프로덕션: resources 폴더에서 .env 찾기
+    return path.join(process.resourcesPath, '.env');
+  } else {
+    // 개발: 프로젝트 루트에서 .env 찾기
+    return path.join(app.getAppPath(), '.env');
+  }
 }

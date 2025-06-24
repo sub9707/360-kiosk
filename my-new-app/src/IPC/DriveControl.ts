@@ -20,7 +20,7 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: 'v3', auth });
 
 // PC에 영상 파일을 저장할 기본 디렉토리
-const VIDEO_SAVE_BASE_DIR = 'F:\\videos\\original';
+const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
 // DriveControl.ts의 edit-video 핸들러를 이 코드로 교체하세요
 
