@@ -35,9 +35,9 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
 
     const tempMainPath = path.join(parsed.dir, `temp_main_${parsed.name}.mp4`);
 
-    // 🔧 **메모리 절약형 배속 편집** (원본에서 직접 각 구간 추출하여 배속 적용)
+    // 🔧 **고화질 배속 편집** (화질 보존 + 메모리 효율성)
     const mainEditCmd = `"${ffmpegPath}" -i "${inputPath}" -filter_complex ` +
-      `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[scaled]; ` +
+      `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[scaled]; ` +
       // 원본에서 직접 각 구간을 추출하여 배속 적용 (2.5초부터 시작)
       `[scaled]trim=start=2.5:end=6.5,setpts=PTS-STARTPTS,setpts=2.0*PTS[v0]; ` + // 2.5~6.5초(4초분량)를 0.5배속 -> 8초
       `[scaled]trim=start=6.5:end=8.5,setpts=PTS-STARTPTS[v1]; ` + // 6.5~8.5초(2초분량)를 1배속 -> 2초
@@ -45,15 +45,17 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       `[scaled]trim=start=12.5:end=17.5,setpts=PTS-STARTPTS[v3]; ` + // 12.5~17.5초(5초분량)를 1배속 -> 5초
       // 단순 연결
       `[v0][v1][v2][v3]concat=n=4:v=1:a=0[outv]" ` +
-      `-map "[outv]" -c:v libx264 -preset ultrafast -crf 28 -an ` +
-      `-threads 2 -g 15 -bufsize 1M -maxrate 2M "${tempMainPath}"`;
+      `-map "[outv]" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p ` +
+      `-profile:v high -level 4.1 -tune film -an ` +
+      `-threads 4 -g 30 -bf 2 -refs 3 ` +
+      `-bufsize 4M -maxrate 8M "${tempMainPath}"`;
 
-    console.log('🚀 [DriveControl] 배속 편집 명령어 (메모리 최적화)');
+    console.log('🚀 [DriveControl] 고화질 배속 편집 명령어');
 
     await new Promise<void>((resolve, reject) => {
       exec(mainEditCmd, {
-        maxBuffer: 1024 * 1024 * 20, // 20MB 버퍼 (더 작게)
-        timeout: 120000 // 2분 타임아웃
+        maxBuffer: 1024 * 1024 * 50, // 50MB 버퍼 (화질 향상을 위해 증가)
+        timeout: 180000 // 3분 타임아웃 (고화질 처리를 위해 증가)
       }, (error, stdout, stderr) => {
         if (error) {
           console.error("❌ [DriveControl] 배속 편집 오류:", error.message);
@@ -66,7 +68,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       });
     });
 
-    // 🎵 intro + main + outro + BGM 합성 (간소화)
+    // 🎵 intro + main + outro + BGM 합성 (고화질 버전)
     const assetPaths = getVideoAssetPaths();
     const introPath = assetPaths.intro;
     const outroPath = assetPaths.outro;
@@ -78,20 +80,25 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     console.log('   - BGM:', bgmPath);
 
     const finalCmd = `"${ffmpegPath}" -i "${introPath}" -i "${tempMainPath}" -i "${outroPath}" -i "${bgmPath}" -filter_complex ` +
-      `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[intro]; ` +
-      `[1:v]scale=1080:1920[main]; ` +
-      `[2:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[outro]; ` +
+      `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[intro]; ` +
+      `[1:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[main]; ` +
+      `[2:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[outro]; ` +
       `[intro][main][outro]concat=n=3:v=1:a=0[outv]; ` +
       `[3:a]atrim=0:35,afade=t=in:d=1,afade=t=out:st=34:d=1,volume=0.8[bgm]" ` +
-      `-map "[outv]" -map "[bgm]" -c:v libx264 -preset fast -crf 25 -c:a aac -b:a 128k ` +
-      `-threads 2 -bufsize 2M -maxrate 4M "${outputPath}"`;
+      `-map "[outv]" -map "[bgm]" ` +
+      `-c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p ` +     // CRF 18로 높은 화질
+      `-profile:v high -level 4.1 -tune film ` +                    // 고품질 프로파일
+      `-c:a aac -b:a 192k -ar 48000 ` +                            // 고품질 오디오
+      `-threads 4 -g 30 -bf 2 -refs 3 ` +                          // 최적화된 인코딩 설정
+      `-movflags +faststart ` +                                     // 웹 재생 최적화
+      `-bufsize 6M -maxrate 12M "${outputPath}"`;                   // 더 높은 비트레이트
 
-    console.log('🚀 [DriveControl] 최종 합성 명령어');
+    console.log('🚀 [DriveControl] 고화질 최종 합성 명령어');
 
     await new Promise<void>((resolve, reject) => {
       exec(finalCmd, {
-        maxBuffer: 1024 * 1024 * 30, // 30MB 버퍼
-        timeout: 180000 // 3분 타임아웃
+        maxBuffer: 1024 * 1024 * 80, // 80MB 버퍼 (고화질 처리)
+        timeout: 300000 // 5분 타임아웃 (고화질 처리를 위해 증가)
       }, (error, stdout, stderr) => {
         if (error) {
           console.error("❌ [DriveControl] 최종 편집 오류:", error.message);
@@ -115,7 +122,7 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       throw new Error('편집된 파일이 비어있습니다');
     }
 
-    console.log(`✅ [DriveControl] 편집 완료: ${outputPath} (${stats.size} bytes)`);
+    console.log(`✅ [DriveControl] 고화질 편집 완료: ${outputPath} (${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
     return { success: true, path: outputPath };
 
   } catch (error: any) {
@@ -198,7 +205,7 @@ ipcMain.handle('get-video-blob', async (_event, videoPath: string) => {
     }
 
     const stats = await fsPromises.stat(videoPath);
-    console.log(`📊 Video file stats: ${stats.size} bytes`);
+    console.log(`📊 Video file stats: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
 
     if (stats.size === 0) {
       console.error('❌ Video file is empty:', videoPath);
@@ -206,7 +213,7 @@ ipcMain.handle('get-video-blob', async (_event, videoPath: string) => {
     }
 
     const buffer = await fsPromises.readFile(videoPath);
-    console.log(`✅ Video blob read successfully: ${buffer.length} bytes`);
+    console.log(`✅ Video blob read successfully: ${(buffer.length / 1024 / 1024).toFixed(2)}MB`);
 
     return { success: true, data: Array.from(buffer) };
 
@@ -228,7 +235,7 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
     }
 
     const stats = await fsPromises.stat(filePath);
-    console.log(`📊 Upload file stats: ${stats.size} bytes`);
+    console.log(`📊 Upload file stats: ${(stats.size / 1024 / 1024).toFixed(2)}MB`);
 
     const folderName = getTodayFolder(); // 예: 20250612
     console.log('📁 Target Google Drive folder:', folderName);
@@ -270,7 +277,15 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
     console.log('🏷️ Generating QR code...');
     const parsed = path.parse(filePath);
     const qrPath = path.join(parsed.dir, `${parsed.name}_qr.png`);
-    await QRCode.toFile(qrPath, videoUrl, { width: 300 });
+    await QRCode.toFile(qrPath, videoUrl, { 
+      width: 400,           // QR 코드 크기 증가
+      margin: 2,            // 여백 최적화
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      errorCorrectionLevel: 'M'  // 중간 수준 오류 정정
+    });
     console.log('✅ QR code generated:', qrPath);
 
     // 3️⃣ QR 이미지 업로드
@@ -330,7 +345,7 @@ ipcMain.handle('get-qr-blob', async (_event, qrPath: string) => {
     }
 
     const buffer = await fsPromises.readFile(qrPath);
-    console.log(`✅ QR blob read successfully: ${buffer.length} bytes`);
+    console.log(`✅ QR blob read successfully: ${(buffer.length / 1024).toFixed(2)}KB`);
 
     return { success: true, data: Array.from(buffer) };
   } catch (error: any) {

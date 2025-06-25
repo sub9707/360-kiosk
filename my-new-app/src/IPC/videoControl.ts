@@ -17,8 +17,7 @@ const getFfmpegPath = () => getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
 // 🆕 배경 영상용 최신 edited 비디오 찾기
 ipcMain.handle('get-latest-background-video', async () => {
     try {
-        console.log('🎬 [VideoControl] 배경 영상용 최신 비디오 검색 시작');
-        
+
         // 베이스 디렉토리 존재 확인
         if (!await fsPromises.access(VIDEO_SAVE_BASE_DIR).then(() => true).catch(() => false)) {
             console.warn('⚠️ [VideoControl] 베이스 디렉토리가 존재하지 않음:', VIDEO_SAVE_BASE_DIR);
@@ -32,8 +31,6 @@ ipcMain.handle('get-latest-background-video', async () => {
             .map(dirent => dirent.name)
             .sort((a, b) => b.localeCompare(a)); // 최신 날짜 순으로 정렬
 
-        console.log('📁 [VideoControl] 발견된 날짜 폴더들:', dateFolders);
-
         if (dateFolders.length === 0) {
             console.warn('⚠️ [VideoControl] 날짜 폴더가 없음');
             return { success: false, useDefault: true, error: 'No date folders found' };
@@ -42,8 +39,6 @@ ipcMain.handle('get-latest-background-video', async () => {
         // 각 날짜 폴더에서 edited_ 비디오 찾기 (최신 날짜부터)
         for (const dateFolder of dateFolders) {
             const folderPath = path.join(VIDEO_SAVE_BASE_DIR, dateFolder);
-            console.log(`🔍 [VideoControl] ${dateFolder} 폴더 검색 중...`);
-
             try {
                 const files = await fsPromises.readdir(folderPath);
                 
@@ -56,8 +51,6 @@ ipcMain.handle('get-latest-background-video', async () => {
                     )
                     .sort((a, b) => b.localeCompare(a)); // 최신 시간 순으로 정렬
 
-                console.log(`📹 [VideoControl] ${dateFolder}에서 발견된 편집 영상들:`, editedVideos);
-
                 if (editedVideos.length > 0) {
                     const latestVideo = editedVideos[0];
                     const videoPath = path.join(folderPath, latestVideo);
@@ -67,7 +60,6 @@ ipcMain.handle('get-latest-background-video', async () => {
                     if (exists) {
                         const stats = await fsPromises.stat(videoPath);
                         if (stats.size > 0) {
-                            console.log(`✅ [VideoControl] 최신 배경 영상 발견: ${videoPath}`);
                             return { 
                                 success: true, 
                                 videoPath: videoPath,
@@ -162,7 +154,6 @@ ipcMain.handle('get-directory-contents', async (_event, directoryPath: string) =
             return b.name.localeCompare(a.name);
         });
 
-        console.log(`[videoControl] Found ${contents.length} entries in ${directoryPath}`);
         return { success: true, contents };
     } catch (error: any) {
         console.error(`[videoControl] Error in get-directory-contents for ${directoryPath}:`, error);

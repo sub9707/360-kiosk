@@ -25,10 +25,10 @@ let connectionTimeout: NodeJS.Timeout | null = null;
 
 // Android 웹소켓 서버 주소 (let으로 변경하여 동적 수정 가능)
 let ANDROID_WS_URL = `ws://${process.env.WIRELESS_ADDRESS}:8080`;
-console.log(1, ANDROID_WS_URL)
+
 // Android HTTP 파일 서버 주소  
 let ANDROID_FILE_SERVER_URL = `http://${process.env.WIRELESS_ADDRESS}:8081`;
-console.log(2, ANDROID_FILE_SERVER_URL)
+
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
