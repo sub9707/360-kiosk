@@ -123,7 +123,6 @@ const QRPage: React.FC = () => {
               width="100%"
               height="100%"
               autoPlay
-              muted
               loop
               controls
               style={{ objectFit: 'contain', backgroundColor: '#000' }}
