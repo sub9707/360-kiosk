@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './QRPage.module.scss';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +12,8 @@ const QRPage: React.FC = () => {
   const [videoType, setVideoType] = useState<string>('loading');
   const [qrImageSrc, setQrImageSrc] = useState<string>('');
   const [qrLink, setQrLink] = useState<string>('');
+
+  const nextButtonRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -101,6 +103,17 @@ const QRPage: React.FC = () => {
     };
   }, []);
 
+  // 페이지 업 키 이벤트 등록
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'PageUp' && nextButtonRef.current) {
+        nextButtonRef.current.click();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.videoResult}>
@@ -148,7 +161,7 @@ const QRPage: React.FC = () => {
         )}
       </div>
 
-      <Link to={'/'} className={styles.homeBtn}>
+      <Link to={'/'} ref={nextButtonRef} className={styles.homeBtn}>
         <img src={HomeIcon} />메인화면
       </Link>
 

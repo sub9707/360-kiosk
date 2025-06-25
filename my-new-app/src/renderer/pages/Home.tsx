@@ -78,8 +78,6 @@ const Home: React.FC = () => {
         setIsModalOpen(false);
     };
 
-    // HID 디바이스 관련 코드
-
     // 페이지 업 키 이벤트 등록
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

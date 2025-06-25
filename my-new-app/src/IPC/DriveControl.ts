@@ -7,7 +7,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { google } from 'googleapis';
 import QRCode from 'qrcode';
-import { getResourcePath } from '../utils/path-utils';
+import { getResourcePath, getVideoAssetPaths } from '../utils/path-utils';
 
 // Google Drive 인증 설정
 const KEYFILEPATH = path.resolve(__dirname, '../../credentials.json');
@@ -22,11 +22,10 @@ const drive = google.drive({ version: 'v3', auth });
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
-// DriveControl.ts의 edit-video 핸들러를 이 코드로 교체하세요
 
 ipcMain.handle('edit-video', async (_event, inputPath: string) => {
   try {
-    console.log('🎬 [DriveControl] 영상 편집 시작 (메모리 절약 버전):', inputPath);
+    console.log('🎬 [DriveControl] 영상 편집 시작:', inputPath);
 
     const parsed = path.parse(inputPath);
     const outputPath = path.join(parsed.dir, `edited_${parsed.name}.mp4`);
@@ -36,15 +35,15 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
 
     const tempMainPath = path.join(parsed.dir, `temp_main_${parsed.name}.mp4`);
 
-    // 🔧 **메모리 절약형 배속 편집** (기존 로직 유지하되 최적화)
+    // 🔧 **메모리 절약형 배속 편집** (원본에서 직접 각 구간 추출하여 배속 적용)
     const mainEditCmd = `"${ffmpegPath}" -i "${inputPath}" -filter_complex ` +
       `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[scaled]; ` +
-      `[scaled]trim=start=2.5:end=4.5,setpts=PTS-STARTPTS[v0raw]; ` +
-      `[v0raw]setpts=0.5*PTS[v0]; ` +
-      `[scaled]trim=start=4.5:end=7.5,setpts=PTS-STARTPTS[v1]; ` +
-      `[scaled]trim=start=7.5:end=9.5,setpts=PTS-STARTPTS[v2raw]; ` +
-      `[v2raw]setpts=0.5*PTS[v2]; ` +
-      `[scaled]trim=start=9.5:end=12.5,setpts=PTS-STARTPTS[v3]; ` +
+      // 원본에서 직접 각 구간을 추출하여 배속 적용 (2.5초부터 시작)
+      `[scaled]trim=start=2.5:end=6.5,setpts=PTS-STARTPTS,setpts=2.0*PTS[v0]; ` + // 2.5~6.5초(4초분량)를 0.5배속 -> 8초
+      `[scaled]trim=start=6.5:end=8.5,setpts=PTS-STARTPTS[v1]; ` + // 6.5~8.5초(2초분량)를 1배속 -> 2초
+      `[scaled]trim=start=8.5:end=12.5,setpts=PTS-STARTPTS,setpts=2.0*PTS[v2]; ` + // 8.5~12.5초(4초분량)를 0.5배속 -> 8초
+      `[scaled]trim=start=12.5:end=17.5,setpts=PTS-STARTPTS[v3]; ` + // 12.5~17.5초(5초분량)를 1배속 -> 5초
+      // 단순 연결
       `[v0][v1][v2][v3]concat=n=4:v=1:a=0[outv]" ` +
       `-map "[outv]" -c:v libx264 -preset ultrafast -crf 28 -an ` +
       `-threads 2 -g 15 -bufsize 1M -maxrate 2M "${tempMainPath}"`;
@@ -68,16 +67,22 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     });
 
     // 🎵 intro + main + outro + BGM 합성 (간소화)
-    const introPath = path.resolve(app.getAppPath(), 'src/renderer/assets/videos/intro.mp4');
-    const outroPath = path.resolve(app.getAppPath(), 'src/renderer/assets/videos/outro.mp4');
-    const bgmPath = path.resolve(app.getAppPath(), 'src/renderer/assets/sounds/bgm.mp3');
+    const assetPaths = getVideoAssetPaths();
+    const introPath = assetPaths.intro;
+    const outroPath = assetPaths.outro;
+    const bgmPath = assetPaths.bgm;
+
+    console.log('🎬 [DriveControl] assets directory:');
+    console.log('   - Intro:', introPath);
+    console.log('   - Outro:', outroPath);
+    console.log('   - BGM:', bgmPath);
 
     const finalCmd = `"${ffmpegPath}" -i "${introPath}" -i "${tempMainPath}" -i "${outroPath}" -i "${bgmPath}" -filter_complex ` +
       `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[intro]; ` +
       `[1:v]scale=1080:1920[main]; ` +
       `[2:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[outro]; ` +
       `[intro][main][outro]concat=n=3:v=1:a=0[outv]; ` +
-      `[3:a]atrim=0:14,afade=t=in:d=1,afade=t=out:st=13:d=1,volume=0.8[bgm]" ` +
+      `[3:a]atrim=0:35,afade=t=in:d=1,afade=t=out:st=34:d=1,volume=0.8[bgm]" ` +
       `-map "[outv]" -map "[bgm]" -c:v libx264 -preset fast -crf 25 -c:a aac -b:a 128k ` +
       `-threads 2 -bufsize 2M -maxrate 4M "${outputPath}"`;
 
@@ -115,81 +120,6 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
 
   } catch (error: any) {
     console.error("❌ [DriveControl] 영상 편집 프로세스 오류:", error);
-    return { success: false, error: error.message };
-  }
-});
-
-// 🔧 원래 복잡한 편집을 원한다면 아래 함수를 별도로 추가 (선택사항)
-ipcMain.handle('edit-video-advanced', async (_event, inputPath: string) => {
-  try {
-    console.log('🎬 [DriveControl] 고급 영상 편집 시작:', inputPath);
-
-    const parsed = path.parse(inputPath);
-    const outputPath = path.join(parsed.dir, `edited_advanced_${parsed.name}.mp4`);
-    const ffmpegPath = getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
-
-    const introPath = path.resolve(app.getAppPath(), 'src/renderer/assets/videos/intro.mp4');
-    const outroPath = path.resolve(app.getAppPath(), 'src/renderer/assets/videos/outro.mp4');
-    const bgmPath = path.resolve(app.getAppPath(), 'src/renderer/assets/sounds/bgm.mp3');
-
-    const tempMainPath = path.join(parsed.dir, `temp_main_${parsed.name}.mp4`);
-
-    // 🔧 2단계 처리로 메모리 절약
-
-    // Step 1: 메인 영상 간단 편집 (속도 변화 없이)
-    const mainEditCmd = `"${ffmpegPath}" -i "${inputPath}" ` +
-      `-ss 2.5 -t 10 ` +
-      `-vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920" ` +
-      `-c:v libx264 -preset fast -crf 23 -an ` +
-      `"${tempMainPath}"`;
-
-    console.log('🚀 [DriveControl] Step 1: 메인 영상 편집');
-    await new Promise<void>((resolve, reject) => {
-      exec(mainEditCmd, { maxBuffer: 1024 * 1024 * 50 }, (error, _, stderr) => {
-        if (error) {
-          console.error("❌ [DriveControl] 메인 영상 편집 오류:", stderr);
-          reject(error);
-        } else {
-          console.log("✅ [DriveControl] 메인 영상 편집 완료");
-          resolve();
-        }
-      });
-    });
-
-    // Step 2: intro + main + outro + BGM 합성 (간소화)
-    const finalCmd = `"${ffmpegPath}" ` +
-      `-i "${introPath}" -i "${tempMainPath}" -i "${outroPath}" -i "${bgmPath}" ` +
-      `-filter_complex "[0:v][1:v][2:v]concat=n=3:v=1:a=0[outv]; [3:a]volume=0.8[bgm]" ` +
-      `-map "[outv]" -map "[bgm]" ` +
-      `-c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k ` +
-      `-shortest "${outputPath}"`;
-
-    console.log('🚀 [DriveControl] Step 2: 최종 합성');
-    await new Promise<void>((resolve, reject) => {
-      exec(finalCmd, { maxBuffer: 1024 * 1024 * 50 }, (error, _, stderr) => {
-        if (error) {
-          console.error("❌ [DriveControl] 최종 편집 오류:", stderr);
-          reject(error);
-        } else {
-          console.log("✅ [DriveControl] 최종 편집 완료");
-          resolve();
-        }
-      });
-    });
-
-    // 임시 파일 정리
-    await fsPromises.unlink(tempMainPath).catch((cleanupError) => {
-      console.warn('⚠️ [DriveControl] 임시 파일 삭제 실패:', cleanupError);
-    });
-
-    const stats = await fsPromises.stat(outputPath);
-    if (stats.size === 0) throw new Error('편집된 파일이 비어있습니다');
-
-    console.log(`✅ [DriveControl] 고급 편집 완료: ${outputPath} (${stats.size} bytes)`);
-    return { success: true, path: outputPath };
-
-  } catch (error: any) {
-    console.error("❌ [DriveControl] 고급 영상 편집 프로세스 오류:", error);
     return { success: false, error: error.message };
   }
 });
