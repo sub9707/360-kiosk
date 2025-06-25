@@ -8,13 +8,37 @@ import path from 'path';
  * @returns 최종 경로
  */
 export function getResourcePath(relativePath: string, exePath: string): string {
-  // NODE_ENV가 production이면 배포 환경으로 간주
+  // NODE_ENV가 production이면 배포 환경
   if (process.env.NODE_ENV === 'production') {
-    // 배포 환경에서는 exe 디렉토리 바로 아래에 있는 exe 파일을 참조
     return path.join(process.resourcesPath, exePath);
   }
-  // 개발 환경에서는 src/exe 하위의 파일을 직접 참조
   return path.resolve(__dirname, '../../src/exe', relativePath);
+}
+
+/**
+ * 🆕 미디어 에셋 파일 경로를 반환합니다 (사용자가 교체 가능)
+ * @param fileName 파일명 (intro.mp4, outro.mp4, bgm.mp3)
+ * @returns 최종 미디어 파일 경로
+ */
+export function getMediaAssetPath(fileName: string): string {
+  if (process.env.NODE_ENV === 'production') {
+    // 프로덕션: resources/assets 폴더에서 찾기
+    return path.join(process.resourcesPath, 'assets', fileName);
+  } else {
+    // 개발: src/renderer/assets 폴더에서 찾기
+    return path.resolve(__dirname, '../../src/renderer/assets/videos', fileName);
+  }
+}
+
+/**
+ *  비디오 관련 에셋 경로들을 반환합니다
+ */
+export function getVideoAssetPaths() {
+  return {
+    intro: getMediaAssetPath('intro.mp4'),
+    outro: getMediaAssetPath('outro.mp4'),
+    bgm: getMediaAssetPath('bgm.mp3')
+  };
 }
 
 /**

@@ -94,9 +94,7 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
     };
 
     // Format current path for display
-    console.log(1, BASE_VIDEO_DIR)
     const displayPath = currentPath.replace(BASE_VIDEO_DIR, '').replace(/\\/g, '/'); 
-    console.log(displayPath)
     const finalDisplayPath = displayPath === '' ? '/' : displayPath;
 
     if (!isOpen) return null;
