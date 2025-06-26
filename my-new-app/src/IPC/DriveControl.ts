@@ -1,5 +1,3 @@
-// src/main/IPC/DriveControl.ts
-
 import { ipcMain, app } from 'electron';
 import fs from 'fs';
 import { promises as fsPromises } from 'fs';
@@ -7,10 +5,10 @@ import path from 'path';
 import { exec } from 'child_process';
 import { google } from 'googleapis';
 import QRCode from 'qrcode';
-import { getResourcePath, getVideoAssetPaths } from '../utils/path-utils';
+import { getAppResourcePath, getExecutablePath, getVideoAssetPaths } from '../utils/path-utils';
 
 // Google Drive 인증 설정
-const KEYFILEPATH = path.resolve(__dirname, '../../credentials.json');
+const KEYFILEPATH = getAppResourcePath('credentials.json', 'credentials.json');
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 const auth = new google.auth.GoogleAuth({
@@ -22,16 +20,35 @@ const drive = google.drive({ version: 'v3', auth });
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
+// Google Drive 폴더 ID
+const DRIVE_FOLDER_ID_FROM_ENV = process.env.DRIVE_FOLDER_ID;
+
 
 ipcMain.handle('edit-video', async (_event, inputPath: string) => {
   try {
+    const startTime = Date.now();
     console.log('🎬 [DriveControl] 영상 편집 시작:', inputPath);
+
+    // Kiosk 폴더 ID 유효성 검사
+    if (!DRIVE_FOLDER_ID_FROM_ENV) {
+      throw new Error('DRIVE_FOLDER_ID is not defined in the environment variables. Please check your .env file.');
+    }
 
     const parsed = path.parse(inputPath);
     const outputPath = path.join(parsed.dir, `edited_${parsed.name}.mp4`);
-    const ffmpegPath = getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
+    
+    // 🆕 FFmpeg 경로 가져오기 및 확인
+    console.log('🔧 [DriveControl] FFmpeg 경로 확인 중...');
+    const ffmpegPath = getExecutablePath('src/exe/ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
+    
+    // 🔧 FFmpeg 파일 존재 여부 확인
+    if (!fs.existsSync(ffmpegPath)) {
+      console.error('❌ [DriveControl] FFmpeg 실행 파일을 찾을 수 없습니다:', ffmpegPath);
+      throw new Error(`FFmpeg 실행 파일을 찾을 수 없습니다: ${ffmpegPath}. 프로그램을 다시 설치해주세요.`);
+    }
 
     console.log('📁 [DriveControl] 출력 경로:', outputPath);
+    console.log('✅ [DriveControl] FFmpeg 경로 확인됨:', ffmpegPath);
 
     const tempMainPath = path.join(parsed.dir, `temp_main_${parsed.name}.mp4`);
 
@@ -45,12 +62,12 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       `[scaled]trim=start=12.5:end=17.5,setpts=PTS-STARTPTS[v3]; ` + // 12.5~17.5초(5초분량)를 1배속 -> 5초
       // 단순 연결
       `[v0][v1][v2][v3]concat=n=4:v=1:a=0[outv]" ` +
-      `-map "[outv]" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p ` +
+      `-map "[outv]" -c:v libx264 -preset medium -crf 22 -pix_fmt yuv420p ` +
       `-profile:v high -level 4.1 -tune film -an ` +
-      `-threads 4 -g 30 -bf 2 -refs 3 ` +
+      `-threads 0 -g 30 -bf 2 -refs 3 ` +
       `-bufsize 4M -maxrate 8M "${tempMainPath}"`;
 
-    console.log('🚀 [DriveControl] 고화질 배속 편집 명령어');
+    console.log('🚀 [DriveControl] 고화질 배속 편집 명령어 실행');
 
     await new Promise<void>((resolve, reject) => {
       exec(mainEditCmd, {
@@ -60,15 +77,18 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
         if (error) {
           console.error("❌ [DriveControl] 배속 편집 오류:", error.message);
           console.error("❌ [DriveControl] FFmpeg stderr:", stderr);
+          console.error("❌ [DriveControl] FFmpeg stdout:", stdout);
           reject(new Error(`배속 편집 실패: ${error.message}`));
         } else {
           console.log("✅ [DriveControl] 배속 편집 완료");
+          if (stdout) console.log("📄 [DriveControl] FFmpeg stdout:", stdout);
           resolve();
         }
       });
     });
 
     // 🎵 intro + main + outro + BGM 합성 (고화질 버전)
+    console.log('🎬 [DriveControl] 에셋 파일 경로 확인 중...');
     const assetPaths = getVideoAssetPaths();
     const introPath = assetPaths.intro;
     const outroPath = assetPaths.outro;
@@ -79,6 +99,22 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     console.log('   - Outro:', outroPath);
     console.log('   - BGM:', bgmPath);
 
+    // 🔧 에셋 파일들 존재 여부 확인
+    const assetFiles = [
+      { name: 'Intro', path: introPath },
+      { name: 'Outro', path: outroPath },
+      { name: 'BGM', path: bgmPath }
+    ];
+
+    for (const asset of assetFiles) {
+      if (!fs.existsSync(asset.path)) {
+        console.error(`❌ [DriveControl] ${asset.name} 파일을 찾을 수 없습니다: ${asset.path}`);
+        throw new Error(`${asset.name} 파일을 찾을 수 없습니다: ${asset.path}. 프로그램을 다시 설치해주세요.`);
+      } else {
+        console.log(`✅ [DriveControl] ${asset.name} 파일 확인됨: ${asset.path}`);
+      }
+    }
+
     const finalCmd = `"${ffmpegPath}" -i "${introPath}" -i "${tempMainPath}" -i "${outroPath}" -i "${bgmPath}" -filter_complex ` +
       `"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[intro]; ` +
       `[1:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p[main]; ` +
@@ -86,14 +122,14 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
       `[intro][main][outro]concat=n=3:v=1:a=0[outv]; ` +
       `[3:a]atrim=0:35,afade=t=in:d=1,afade=t=out:st=34:d=1,volume=0.8[bgm]" ` +
       `-map "[outv]" -map "[bgm]" ` +
-      `-c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p ` +     // CRF 18로 높은 화질
+      `-c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p ` +     // CRF 20로 높은 화질
       `-profile:v high -level 4.1 -tune film ` +                    // 고품질 프로파일
       `-c:a aac -b:a 192k -ar 48000 ` +                            // 고품질 오디오
-      `-threads 4 -g 30 -bf 2 -refs 3 ` +                          // 최적화된 인코딩 설정
+      `-threads 0 -g 30 -bf 2 -refs 3 ` +                          // 최적화된 인코딩 설정
       `-movflags +faststart ` +                                     // 웹 재생 최적화
       `-bufsize 6M -maxrate 12M "${outputPath}"`;                   // 더 높은 비트레이트
 
-    console.log('🚀 [DriveControl] 고화질 최종 합성 명령어');
+    console.log('🚀 [DriveControl] 고화질 최종 합성 명령어 실행');
 
     await new Promise<void>((resolve, reject) => {
       exec(finalCmd, {
@@ -103,9 +139,11 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
         if (error) {
           console.error("❌ [DriveControl] 최종 편집 오류:", error.message);
           console.error("❌ [DriveControl] FFmpeg stderr:", stderr);
+          console.error("❌ [DriveControl] FFmpeg stdout:", stdout);
           reject(new Error(`최종 편집 실패: ${error.message}`));
         } else {
           console.log("✅ [DriveControl] 최종 편집 완료");
+          if (stdout) console.log("📄 [DriveControl] FFmpeg stdout:", stdout);
           resolve();
         }
       });
@@ -121,6 +159,10 @@ ipcMain.handle('edit-video', async (_event, inputPath: string) => {
     if (stats.size === 0) {
       throw new Error('편집된 파일이 비어있습니다');
     }
+
+    const endTime = Date.now(); // ✨ 편집 종료 시간 기록
+    const totalDuration = ((endTime - startTime) / 1000).toFixed(2); // 초 단위로 변환
+    console.log(`✅ [DriveControl] 총 편집 소요 시간: ${totalDuration} 초`);
 
     console.log(`✅ [DriveControl] 고화질 편집 완료: ${outputPath} (${(stats.size / 1024 / 1024).toFixed(2)}MB)`);
     return { success: true, path: outputPath };
@@ -240,8 +282,13 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
     const folderName = getTodayFolder(); // 예: 20250612
     console.log('📁 Target Google Drive folder:', folderName);
 
-    const kioskFolderId = '1bR2A-WxQkRD51lByA6r8ePt51cqF8O8B'; // 상위 kiosk 폴더 ID
-    const targetFolderId = await findOrCreateFolder(folderName, kioskFolderId);
+
+    if (!DRIVE_FOLDER_ID_FROM_ENV) {
+      throw new Error('KIOSK_FOLDER_ID is not defined in the environment variables. Cannot upload to Google Drive.');
+    }
+
+    const driveFolderId = DRIVE_FOLDER_ID_FROM_ENV; 
+    const targetFolderId = await findOrCreateFolder(folderName, driveFolderId); 
     console.log('📁 Google Drive folder ID:', targetFolderId);
 
     // 1️⃣ 영상 업로드
@@ -277,7 +324,7 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
     console.log('🏷️ Generating QR code...');
     const parsed = path.parse(filePath);
     const qrPath = path.join(parsed.dir, `${parsed.name}_qr.png`);
-    await QRCode.toFile(qrPath, videoUrl, { 
+    await QRCode.toFile(qrPath, videoUrl, {
       width: 400,           // QR 코드 크기 증가
       margin: 2,            // 여백 최적화
       color: {

@@ -11,8 +11,9 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     extraResource: [
-      './src/exe',  
+      './src/exe/ffmpeg/ffmpeg.exe', ,
       './.env',
+      './credentials.json',
       './src/renderer/assets'
     ]
   },

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promises as fsPromises } from 'fs';
 import { exec } from 'child_process';
-import { getResourcePath } from '../utils/path-utils'; // Assuming you have path-utils
+import { getExecutablePath } from '../utils/path-utils'; // Assuming you have path-utils
 
 
 // --- Diagnostic additions ---
@@ -12,7 +12,7 @@ console.log(`[VideoControl] RAW process.env.BASE_DIRECTORY: ${process.env.BASE_D
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
 // Helper function to get ffmpeg path
-const getFfmpegPath = () => getResourcePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
+const getFfmpegPath = () => getExecutablePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
 
 // 🆕 배경 영상용 최신 edited 비디오 찾기
 ipcMain.handle('get-latest-background-video', async () => {

@@ -4,8 +4,11 @@ import { Link } from 'react-router-dom';
 
 import HomeIcon from '/src/renderer/assets/icons/home.svg';
 import Spinner from '../components/Spinner/Spinner';
+import { useEnvConfig } from '../hooks/useEnvConfig';
 
 const QRPage: React.FC = () => {
+  const { config, loading } = useEnvConfig();
+
   const { ipcRenderer } = window.require("electron");
   const [videoSrc, setVideoSrc] = useState<string>('');
   const [videoFileName, setVideoFileName] = useState<string>('');
@@ -165,10 +168,9 @@ const QRPage: React.FC = () => {
       </Link>
 
       <footer className={styles.footer}>
-        {
-          (import.meta.env.copyright == true && import.meta.env.copyright) &&
+        {config && config.copyright && (
           <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
-        }
+        )}
       </footer>
     </div>
   );
