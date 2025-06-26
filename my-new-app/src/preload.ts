@@ -15,6 +15,8 @@ declare global {
         removeListener: (channel: string, listener: (...args: any[]) => void) => void;
         removeAllListeners: (channel: string) => void;
       };
+      // 🆕 환경설정 API 추가
+      getEnvConfig: () => Promise<any>;
     };
   }
 }
@@ -45,6 +47,11 @@ try {
       removeAllListeners: (channel: string) => {
         ipcRenderer.removeAllListeners(channel);
       }
+    },
+    // 🆕 환경설정 가져오기 API 추가
+    getEnvConfig: () => {
+      console.log('🔧 [Preload] getEnvConfig called');
+      return ipcRenderer.invoke('get-env-config');
     }
   };
 

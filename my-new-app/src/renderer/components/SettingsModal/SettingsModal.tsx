@@ -7,9 +7,7 @@ const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isO
     if (!isOpen) return null;
 
     const exitButtonHandler = () => {
-        if (confirm("프로그램을 종료하시겠습니까?")) {
-            ipcRenderer.send('exit-app');
-        }
+        ipcRenderer.send('exit-app');
     }
 
     return (
@@ -19,18 +17,8 @@ const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isO
                     <h2>환경 설정</h2>
                     <button className={styles.closeButton} onClick={onClose}> <img src={CloseIcon} alt="Close" /></button>
                 </div>
-                <div className={styles.modalBody}>
-                    <div className={styles.inputGroup}>
-                        <label>IP 주소</label>
-                        <input type="text" defaultValue="192.168.1.100" />
-                    </div>
-                    <div className={styles.inputGroup}>
-                        <label>기본 경로</label>
-                        <input className={styles.dirInput} type="text" defaultValue="F:\videos\original" />
-                    </div>
-                </div>
+
                 <div className={styles.modalFooter}>
-                    <button className={styles.saveButton}>저장</button>
                     <button className={styles.exitButton} onClick={exitButtonHandler}>프로그램 종료</button>
                 </div>
             </div>

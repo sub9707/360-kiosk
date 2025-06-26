@@ -8,8 +8,11 @@ import FolderIcon from '/src/renderer/assets/icons/folder.svg';
 import SettingIcon from '/src/renderer/assets/icons/setting.svg';
 import SettingsModal from '../components/SettingsModal/SettingsModal';
 import VideoManagementModal from '../components/VideoManagementModal/VideoManagementModal';
+import { useEnvConfig } from '../hooks/useEnvConfig';
 
 const Home: React.FC = () => {
+    const { config, loading } = useEnvConfig();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [videoSource, setVideoSource] = useState<string>(sampleVideo);
@@ -127,10 +130,9 @@ const Home: React.FC = () => {
             </div>
 
             <footer className={styles.footer}>
-                {
-                    (import.meta.env.copyright == true && import.meta.env.copyright) &&
+                {config && config.copyright && (
                     <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
-                }
+                )}
             </footer>
 
             {/* Settings Button */}

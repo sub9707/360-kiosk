@@ -1,10 +1,12 @@
-// src/renderer/components/VideoManagementModal/VideoManagementModal.tsimport React, { useState, useEffect, useCallback } from 'react';
+// src/renderer/components/VideoManagementModal/VideoManagementModal.tsx
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './VideoManagementModal.module.scss';
 import CloseIcon from '/src/renderer/assets/icons/close.svg';
 import FolderIcon from '/src/renderer/assets/icons/file_folder.svg'; // New folder icon
 import BackIcon from '/src/renderer/assets/icons/back.svg'; // Back icon
-import { useCallback, useEffect, useState } from 'react';
 import VideoPlayerModal from './VideoPlayerModal';
+// 🆕 환경설정 훅 import
+import { useEnvConfig } from '../../hooks/useEnvConfig';
 
 interface VideoManagementModalProps {
     isOpen: boolean;
@@ -18,17 +20,33 @@ interface DirectoryEntry {
     thumbnail?: string;
 }
 
-const BASE_VIDEO_DIR = import.meta.env.VITE_BASE_DIRECTORY;
-
 const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onClose }) => {
     const { ipcRenderer } = window.require("electron");
-
-    const [currentPath, setCurrentPath] = useState<string>(BASE_VIDEO_DIR);
+    
+    // 🔄 환경설정 훅 사용으로 변경
+    const { config, loading: configLoading } = useEnvConfig();
+    
+    // 🔄 BASE_VIDEO_DIR을 state로 관리
+    const [baseVideoDir, setBaseVideoDir] = useState<string>('');
+    const [currentPath, setCurrentPath] = useState<string>('');
     const [entries, setEntries] = useState<DirectoryEntry[]>([]);
     const [playingVideoPath, setPlayingVideoPath] = useState<string | null>(null); // For VideoPlayerModal
 
+    // 🆕 환경설정이 로드되면 baseVideoDir 설정
+    useEffect(() => {
+        if (config && config.baseDirectory) {
+            setBaseVideoDir(config.baseDirectory);
+            // 처음 열릴 때만 currentPath 설정
+            if (!currentPath || currentPath === '') {
+                setCurrentPath(config.baseDirectory);
+            }
+        }
+    }, [config]);
+
     // Function to fetch directory contents (folders or videos with thumbnails)
     const fetchDirectoryContents = useCallback(async (path: string) => {
+        if (!path) return; // path가 없으면 실행하지 않음
+        
         try {
             const result = await ipcRenderer.invoke('get-directory-contents', path);
             if (result.success) {
@@ -44,23 +62,22 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
     }, [ipcRenderer]);
 
     useEffect(() => {
-        if (isOpen) {
-            setCurrentPath(BASE_VIDEO_DIR); // Reset path when modal opens
-            fetchDirectoryContents(BASE_VIDEO_DIR);
-        } else {
+        if (isOpen && baseVideoDir) {
+            setCurrentPath(baseVideoDir); // Reset path when modal opens
+            fetchDirectoryContents(baseVideoDir);
+        } else if (!isOpen) {
             // Reset states when modal closes
-            setCurrentPath(BASE_VIDEO_DIR);
+            setCurrentPath('');
             setEntries([]);
             setPlayingVideoPath(null);
         }
-    }, [isOpen, fetchDirectoryContents]);
+    }, [isOpen, baseVideoDir, fetchDirectoryContents]);
 
     useEffect(() => {
-        if (isOpen) { // Only fetch when modal is open
+        if (isOpen && currentPath) { // Only fetch when modal is open and path is set
             fetchDirectoryContents(currentPath);
         }
     }, [currentPath, fetchDirectoryContents, isOpen]);
-
 
     const handleEntryClick = (entry: DirectoryEntry) => {
         if (entry.isDirectory) {
@@ -72,7 +89,7 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
     };
 
     const handleBackClick = () => {
-        if (currentPath === BASE_VIDEO_DIR) {
+        if (currentPath === baseVideoDir) {
             return; // Cannot go back from the base directory
         }
         const parentPath = window.require('path').dirname(currentPath);
@@ -94,10 +111,27 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
     };
 
     // Format current path for display
-    const displayPath = currentPath.replace(BASE_VIDEO_DIR, '').replace(/\\/g, '/'); 
+    const displayPath = baseVideoDir ? currentPath.replace(baseVideoDir, '').replace(/\\/g, '/') : '';
     const finalDisplayPath = displayPath === '' ? '/' : displayPath;
 
     if (!isOpen) return null;
+
+    // 🆕 환경설정 로딩 중일 때 로딩 표시
+    if (configLoading || !baseVideoDir) {
+        return (
+            <div className={styles.modalOverlay}>
+                <div className={styles.modalContent}>
+                    <button className={styles.closeButton} onClick={onClose}>
+                        <img src={CloseIcon} alt="Close" />
+                    </button>
+                    <h2>영상 관리</h2>
+                    <div className={styles.fileExplorer}>
+                        <p className={styles.emptyMessage}>설정을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.modalOverlay}>
@@ -108,7 +142,7 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
                 <h2>영상 관리</h2>
 
                 <div className={styles.menuBar}>
-                    {currentPath !== BASE_VIDEO_DIR && (
+                    {currentPath !== baseVideoDir && (
                         <button className={styles.backButton} onClick={handleBackClick}>
                             <img src={BackIcon} alt="Back" /> 뒤로
                         </button>
@@ -119,7 +153,7 @@ const VideoManagementModal: React.FC<VideoManagementModalProps> = ({ isOpen, onC
                 <div className={styles.fileExplorer}>
                     {entries.length === 0 ? (
                         <p className={styles.emptyMessage}>
-                            {currentPath === BASE_VIDEO_DIR ? '폴더가 없습니다.' : '이 폴더에 영상이 없습니다.'}
+                            {currentPath === baseVideoDir ? '폴더가 없습니다.' : '이 폴더에 영상이 없습니다.'}
                         </p>
                     ) : (
                         <div className={styles.gridContainer}>

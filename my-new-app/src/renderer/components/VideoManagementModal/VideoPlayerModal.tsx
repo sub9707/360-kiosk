@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './VideoPlayerModal.module.scss';
 import CloseIcon from '/src/renderer/assets/icons/close.svg';
 
+
 interface VideoPlayerModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -11,6 +12,7 @@ interface VideoPlayerModalProps {
 const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ isOpen, onClose, videoPath }) => {
     const { ipcRenderer } = window.require("electron");
     const path = window.require("path");
+
 
     const [qrBlobUrl, setQrBlobUrl] = useState<string | null>(null);
     const [showQr, setShowQr] = useState(false); // To explicitly control QR visibility
@@ -105,7 +107,9 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ isOpen, onClose, vi
 
     if (!isOpen) return null;
 
-    console.log("QR: ", qrBlobUrl)
+    console.log("QR: ", qrBlobUrl);
+    
+    // 🆕 환경설정 로딩 중일 때는 기본 동작 유지 (VideoPlayerModal은 videoPath에 의존하므로 큰 영향 없음)
 
     return (
         <div className={styles.videoPlayerModalOverlay} onClick={onClose}>
