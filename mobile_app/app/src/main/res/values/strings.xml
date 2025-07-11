@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">360 Camera</string> <string name="connection_status_connected">Electron 연결됨</string>
+    <string name="connection_status_disconnected">Electron 연결 끊김</string>
+    <string name="connection_status_connecting">Electron 연결 상태: 연결 중...</string>
+    <string name="recording_status_ready">녹화 상태: 대기</string>
+    <string name="recording_status_recording">녹화 상태: 녹화 중...</string>
+    <string name="recording_status_completed">녹화 상태: 완료 (%s)</string> <string name="last_command_prefix">최근 명령:</string>
+    <string name="last_command_none">없음</string>
+    <string name="button_start_recording">녹화 시작</string>
+    <string name="button_stop_recording">녹화 중지</string>
+    <string name="permission_denied_message">권한이 허용되지 않았습니다.</string>
+
+</resources>
