@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    tools:context=".MainActivity">
+
+    <!-- 📹 카메라 프리뷰 (전체 화면) -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 🔴 녹화 인디케이터 (우측 상단, 깜빡거림) -->
+    <View
+        android:id="@+id/recordingIndicator"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/recording_indicator_background"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 📱 상태 정보 오버레이 (좌측 상단) -->
+    <LinearLayout
+        android:id="@+id/statusOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        android:orientation="vertical"
+        android:padding="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/connectionStatusTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PC 연결 대기중..."
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:fontFamily="monospace"
+            android:drawablePadding="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/recordingStatusTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="촬영 대기"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:fontFamily="monospace"
+            android:drawablePadding="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/lastCommandTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="최근 명령: 없음"
+            android:textColor="@color/command_text_color"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:drawablePadding="8dp" />
+
+    </LinearLayout>
+
+    <!-- 📱 하단 앱 정보 (선택사항) -->
+    <TextView
+        android:id="@+id/appInfoTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="HOWDOYOUDO 360도 카메라"
+        android:textColor="#80FFFFFF"
+        android:textSize="12sp"
+        android:fontFamily="sans-serif-light"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
