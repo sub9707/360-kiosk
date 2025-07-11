@@ -1,0 +1,67 @@
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10rem;
+  width: 100%;
+  max-width: 50rem;
+
+  .progressBarContainer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .progressBarBg {
+      width: 100%;
+      height: 1.5rem;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 1rem;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        0 4px 20px rgba(0, 0, 0, 0.2);
+
+      .progressBar {
+        height: 100%;
+        border-radius: 1rem;
+        transition: all 1s linear;
+        position: relative;
+        overflow: hidden;
+        background-color: white;
+
+        .progressShine {
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.4),
+            transparent);
+          animation: shine 2s infinite;
+        }
+      }
+    }
+  }
+
+  .timeLeft {
+    color: white;
+    font-size: 3rem;
+    font-weight: 500;
+    margin-top: 2rem;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "jsx": "react-jsx", 
+    "jsx": "react-jsx",
     "target": "ESNext",
     "module": "ESNext",
     "allowJs": true,
@@ -11,6 +11,23 @@
     "baseUrl": ".",
     "outDir": "dist",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@/components/*": [
+        "./src/renderer/components/*"
+      ],
+      "@/hooks/*": [
+        "./src/renderer/hooks/*"
+      ],
+      "@/types/*": [
+        "./src/renderer/types/*"
+      ],
+      "@/assets/*": [
+        "./src/renderer/assets/*"
+      ]
+    }
   }
 }

@@ -8,7 +8,7 @@ import path from 'path';
 import axios from 'axios';
 import { getTodayFolder } from './DriveControl';
 
-// `BrowserWindow` 인스턴스를 저장할 변수
+// BrowserWindow 인스턴스를 저장 변수
 let _mainWindow: BrowserWindow | null = null;
 
 let ws: WebSocket | null = null; // 웹소켓 클라이언트 인스턴스
@@ -32,18 +32,18 @@ let ANDROID_FILE_SERVER_URL = `http://${process.env.WIRELESS_ADDRESS}:8081`;
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
-// 🐛 디버깅 로그 함수 (로그 레벨 추가)
+// 디버깅 로그
 function debugLog(message: string, level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' = 'DEBUG', data?: any) {
     const timestamp = new Date().toLocaleTimeString();
     const prefix = level === 'ERROR' ? '❌' : level === 'WARN' ? '⚠️' : level === 'INFO' ? 'ℹ️' : '🐛';
     console.log(`${prefix} [${timestamp}] [MobileControl] ${message}`, data || '');
 }
 
-// 🔧 연결 상태 업데이트 함수 (강화된 중복 방지)
+// 연결 상태 업데이트
 function updateConnectionStatus(isConnected: boolean, message: string) {
     // 상태가 실제로 변경된 경우에만 알림
     if (lastConnectionStatus !== isConnected || !connectionNotificationSent) {
-        debugLog(`🔔 Connection status changed (attempt #${connectionAttempts}): ${isConnected} - ${message}`, 'INFO');
+        debugLog(`Connection status changed (attempt #${connectionAttempts}): ${isConnected} - ${message}`, 'INFO');
         _mainWindow?.webContents.send('camera-connect-reply', isConnected, message);
         lastConnectionStatus = isConnected;
         connectionNotificationSent = true;
@@ -55,7 +55,7 @@ function updateConnectionStatus(isConnected: boolean, message: string) {
             cameraConnected = false;
         }
     } else {
-        debugLog(`Connection status unchanged: ${isConnected} (no notification sent)`);
+        debugLog(`Connection status unchanged: ${isConnected}`);
     }
 }
 
@@ -90,13 +90,13 @@ ipcMain.on('set-main-window', (event) => {
     ensureVideoSaveDir();
 });
 
-// 🔧 Android IP 변경 핸들러
+// Android IP 변경 핸들러
 ipcMain.on('change-android-ip', (event, newIP: string) => {
-    debugLog(`📡 Android IP 변경 요청: ${newIP}`, 'INFO');
+    debugLog(`Android IP 변경 요청: ${newIP}`, 'INFO');
     // IP 주소 업데이트
     ANDROID_WS_URL = `ws://${newIP}:8080`;
     ANDROID_FILE_SERVER_URL = `http://${newIP}:8081`;
-    debugLog(`📡 새로운 URL: WS=${ANDROID_WS_URL}, HTTP=${ANDROID_FILE_SERVER_URL}`);
+    debugLog(`새로운 URL: WS=${ANDROID_WS_URL}, HTTP=${ANDROID_FILE_SERVER_URL}`);
 
     // 기존 웹소켓 연결이 있으면 종료
     cleanupWebSocket();
@@ -125,7 +125,7 @@ function cleanupWebSocket() {
 
 // 🔍 Android 서버 상태 확인 핸들러
 ipcMain.handle('check-android-server-status', async () => {
-    debugLog('🔍 Android 서버 상태 확인 요청', 'INFO');
+    debugLog('Android 서버 상태 확인 요청', 'INFO');
     try {
         const statusUrl = `${ANDROID_FILE_SERVER_URL}/status`;
         const response = await axios.get(statusUrl, { timeout: 5000 });
@@ -176,19 +176,19 @@ ipcMain.handle('check-connection-status', async () => {
     return connectionInfo;
 });
 
-// --- 🚀 자동 카메라 연결 요청 핸들러 (프롬프트 제거) ---
+// -자동 카메라 연결 요청 핸들러 (프롬프트 제거)
 ipcMain.on('camera-connect', async () => {
     debugLog('🚀 camera-connect 이벤트 수신 (자동 연결 시도)', 'INFO');
 
     manualReset = false;
 
-    // 🔧 이미 연결 중인 경우 무시
+    // 이미 연결 중인 경우 무시
     if (isReconnecting) {
         debugLog('Already reconnecting, ignoring connect request', 'WARN');
         return;
     }
 
-    // 🔧 이미 연결된 경우 상태 확인만
+    // 이미 연결된 경우 상태 확인만
     if (ws && ws.readyState === WebSocket.OPEN) {
         debugLog('✅ 이미 연결되어 있음 - 상태 확인만 수행', 'INFO');
         updateConnectionStatus(true, 'PC와 연결됨');
@@ -199,7 +199,7 @@ ipcMain.on('camera-connect', async () => {
     connectionNotificationSent = false;
     connectionAttempts++;
 
-    // 🚀 바로 연결 시도 (네트워크 테스트 생략으로 더 빠른 연결)
+    // 바로 연결 시도
     debugLog('🚀 네트워크 테스트 생략하고 바로 연결 시도', 'INFO');
     connectToAndroidApp();
 });
@@ -262,7 +262,7 @@ ipcMain.on('reset-connection-state', () => {
 });
 
 /**
- * 🚀 Android 앱의 웹소켓 서버에 자동 연결을 시도합니다. (프롬프트 없음)
+ * Android 앱의 웹소켓 서버에 자동 연결을 시도
  */
 function connectToAndroidApp() {
     if (_mainWindow === null) {
@@ -270,23 +270,23 @@ function connectToAndroidApp() {
         return;
     }
 
-    // 🔧 이미 연결된 경우 확인
+    // 이미 연결된 경우 확인
     if (ws && ws.readyState === WebSocket.OPEN) {
         debugLog('웹소켓이 이미 연결되어 있습니다.', 'INFO');
         updateConnectionStatus(true, 'PC와 연결됨');
         return;
     }
 
-    // 🔧 연결 시도 중인 경우
+    // 연결 시도 중인 경우
     if (ws && ws.readyState === WebSocket.CONNECTING) {
         debugLog('웹소켓 연결 시도 중...', 'WARN');
         return;
     }
 
-    // 🔧 기존 WebSocket 정리
+    // 기존 WebSocket 정리
     cleanupWebSocket();
 
-    debugLog(`🚀 웹소켓 서버 ${ANDROID_WS_URL}에 자동 연결 시도... (attempt #${connectionAttempts})`, 'INFO');
+    debugLog(`웹소켓 서버 ${ANDROID_WS_URL}에 자동 연결 시도... (attempt #${connectionAttempts})`, 'INFO');
     isReconnecting = true;
 
     ws = new WebSocket(ANDROID_WS_URL);
@@ -304,15 +304,15 @@ function connectToAndroidApp() {
             connectionTimeout = null;
         }
 
-        debugLog('✅ 웹소켓 자동 연결 성공!', 'INFO');
+        debugLog('웹소켓 자동 연결 성공!', 'INFO');
         isReconnecting = false;
         updateConnectionStatus(true, 'PC와 자동 연결되었습니다');
 
-        // 🚀 연결 즉시 안정화
+        // 연결 즉시 안정화
         connectionAttempts = 0; // 성공하면 카운터 리셋
         cameraConnected = true;
 
-        // 🔧 연결 확인용 ping 전송 (선택사항)
+        // 🔧 연결 확인용 ping 전송
         setTimeout(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 sendMessageToAndroid('ping', { timestamp: Date.now() });
@@ -327,7 +327,7 @@ function connectToAndroidApp() {
             const eventName = message.eventName;
             const data = message.data;
 
-            debugLog(`📨 Android로부터 메시지 수신: ${eventName}`);
+            debugLog(`Android로부터 메시지 수신: ${eventName}`);
 
             // 🔧 이벤트별 처리 최적화
             switch (eventName) {
@@ -423,14 +423,14 @@ function connectToAndroidApp() {
     };
 }
 
-// 🔧 비디오 저장 처리 함수 분리
+// 비디오 저장 처리 함수 분리
 async function handleVideoSaved(androidFileName: string) {
-    debugLog(`🎬 Android 녹화 완료! 파일 자동 다운로드 시작: ${androidFileName}`, 'INFO');
+    debugLog(`Android 녹화 완료! 파일 자동 다운로드 시작: ${androidFileName}`, 'INFO');
 
     const downloadResult = await copyVideoFromAndroid(androidFileName);
 
     if (downloadResult.success) {
-        debugLog(`✅ PC 저장 성공! 경로: ${downloadResult.localVideoPath}`, 'INFO');
+        debugLog(`PC 저장 성공! 경로: ${downloadResult.localVideoPath}`, 'INFO');
         _mainWindow?.webContents.send('camera-record-complete', {
             success: true,
             path: downloadResult.localVideoPath,
@@ -438,7 +438,7 @@ async function handleVideoSaved(androidFileName: string) {
         });
 
         // Android에 파일 삭제 요청
-        debugLog(`🗑️ Android 원본 파일 자동 삭제 요청: ${androidFileName}`);
+        debugLog(`Android 원본 파일 자동 삭제 요청: ${androidFileName}`);
         sendMessageToAndroid('deleteFile', { fileName: androidFileName });
     } else {
         debugLog(`❌ 파일 다운로드 실패: ${downloadResult.error}`, 'ERROR');
@@ -498,7 +498,7 @@ async function copyVideoFromAndroid(androidFileName: string) {
         });
 
         const stats = await fsPromises.stat(localVideoPath);
-        debugLog(`✅ 파일 다운로드 완료: ${localVideoPath} (${stats.size} bytes)`, 'INFO');
+        debugLog(`파일 다운로드 완료: ${localVideoPath} (${stats.size} bytes)`, 'INFO');
 
         return { success: true, localVideoPath };
 

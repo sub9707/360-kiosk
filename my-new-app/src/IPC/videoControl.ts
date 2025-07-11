@@ -12,7 +12,7 @@ console.log(`[VideoControl] RAW process.env.BASE_DIRECTORY: ${process.env.BASE_D
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 
 // Helper function to get ffmpeg path
-const getFfmpegPath = () => getExecutablePath('ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
+const getFfmpegPath = () => getExecutablePath('src/exe/ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
 
 // 🆕 배경 영상용 최신 edited 비디오 찾기
 ipcMain.handle('get-latest-background-video', async () => {
