@@ -1,0 +1,57 @@
+// src/renderer/components/layout/Header/Header.module.scss
+
+.menubar {
+  width: 100%;
+  height: 5rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+
+  .menubarWrapper {
+    width: 100%;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    position: relative;
+    font-family: 'NanumBarunGothic';
+
+    .homeBtn {
+      position: absolute;
+      top: 50%;
+      left: 3rem;
+      transform: translateY(-50%);
+      background: transparent;
+      border-radius: 50%;
+      border: white 2px solid;
+      width: 3.5rem;
+      height: 3.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      img {
+        width: 70%;
+        height: 70%;
+      }
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-50%) scale(1.05);
+      }
+    }
+
+    .status {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: aqua;
+      font-size: 2rem;
+      font-weight: 500;
+    }
+  }
+}

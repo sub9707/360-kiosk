@@ -1,0 +1,85 @@
+.connectingStatus,
+.connectError,
+.centerMessage,
+.filmInProgress,
+.filmComplete,
+.transferInProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  p {
+    color: white;
+    font-size: 4rem;
+    font-family: 'NanumBarunGothic';
+    font-weight: 700;
+    margin: 0;
+  }
+}
+
+.connectingStatus {
+  gap: 2rem;
+
+  p {
+    font-weight: 500;
+  }
+}
+
+.connectError {
+  gap: 3rem;
+
+  p {
+    font-weight: 500;
+  }
+}
+
+.centerMessage {
+  gap: 4rem;
+
+  p {
+    font-weight: 500;
+  }
+}
+
+.filmInProgress {
+  gap: 2rem;
+
+  p {
+    margin-bottom: 2rem;
+  }
+}
+
+.filmComplete {
+  gap: 3rem;
+
+  .editingStatus {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 3rem;
+    gap: 2rem;
+
+    p {
+      font-weight: 500;
+    }
+  }
+
+  .buttonGroup {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+.transferInProgress {
+  gap: 2rem;
+
+  .transferDescription {
+    font-size: 2rem !important;
+    color: #666 !important;
+    margin-top: 1rem;
+  }
+}

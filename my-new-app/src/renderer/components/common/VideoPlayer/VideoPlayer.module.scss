@@ -1,0 +1,49 @@
+// src/renderer/components/common/VideoPlayer/VideoPlayer.module.scss
+
+.videoContainer {
+  background-color: black;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.cover {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  &.vertical {
+    width: 35rem;
+    aspect-ratio: 9 / 16;
+  }
+
+  &.horizontal {
+    width: 60rem;
+    aspect-ratio: 16 / 9;
+  }
+
+  .video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: #000;
+
+    &.cover {
+      object-fit: cover;
+    }
+  }
+
+  .videoFallback {
+    color: white;
+    font-size: 2rem;
+    text-align: center;
+    padding: 2rem;
+    font-family: 'NanumBarunGothic';
+  }
+}
