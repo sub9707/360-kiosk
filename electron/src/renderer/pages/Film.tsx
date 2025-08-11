@@ -1,5 +1,3 @@
-// src/renderer/Film.tsx (리팩토링)
-
 import React, { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Film.module.scss';

@@ -1,5 +1,3 @@
-// src/renderer/QRPage.tsx (리// src/renderer/QRPage.tsx (리팩토링)
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './QRPage.module.scss';
@@ -24,6 +22,7 @@ const { ipcRenderer } = window.require("electron");
 const QRPage: React.FC = () => {
   const { videoData, videoSrc, qrState, loadVideo, uploadAndGenerateQR, cleanup } = useVideo();
   const [videoFileName, setVideoFileName] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   
   const nextButtonRef = useRef<HTMLAnchorElement>(null);
 
@@ -31,33 +30,66 @@ const QRPage: React.FC = () => {
   useKeyboard('PageUp', () => {}, nextButtonRef);
 
   useEffect(() => {
+    // 이미 초기화되었다면 실행하지 않음
+    if (isInitialized) {
+      console.log('Already initialized, skipping...');
+      return;
+    }
+
     const initializeVideo = async () => {
-      const savedVideoPath = localStorage.getItem('editedVideoPath');
-      
-      // 비디오 로드
-      const result = await loadVideo(savedVideoPath);
-      if (!result) return;
+      try {
+        console.log('🎬 QRPage 초기화 시작');
+        
+        const savedVideoPath = localStorage.getItem('editedVideoPath');
+        console.log('📁 저장된 비디오 경로:', savedVideoPath);
+        
+        // 비디오 로드
+        const result = await loadVideo(savedVideoPath || undefined);
+        if (!result) {
+          console.error('❌ 비디오 로드 실패');
+          return;
+        }
 
-      const { path } = result;
-      
-      // 파일명 설정
-      const fileName = path.split(/[\\/]/).pop() || '';
-      setVideoFileName(fileName);
-      
-      // localStorage 클리어
-      if (savedVideoPath) {
-        localStorage.removeItem('editedVideoPath');
+        const { path } = result;
+        console.log('✅ 비디오 로드 성공:', path);
+        
+        // 파일명 설정
+        const fileName = path.split(/[\\/]/).pop() || '';
+        setVideoFileName(fileName);
+        
+        // localStorage 클리어 (한 번만)
+        if (savedVideoPath) {
+          localStorage.removeItem('editedVideoPath');
+          console.log('🗑️ localStorage 클리어됨');
+        }
+
+        // 드라이브 업로드 및 QR 생성 (한 번만)
+        const uploadResult = await uploadAndGenerateQR(path);
+        if (uploadResult.success) {
+          console.log('✅ 업로드 및 QR 생성 완료');
+        } else {
+          console.error('❌ 업로드 실패:', uploadResult.error);
+        }
+
+        // 초기화 완료 표시
+        setIsInitialized(true);
+        console.log('🎉 QRPage 초기화 완료');
+
+      } catch (error) {
+        console.error('❌ QRPage 초기화 실패:', error);
       }
-
-      // 드라이브 업로드 및 QR 생성
-      await uploadAndGenerateQR(path);
     };
 
     initializeVideo();
+  }, []); // 빈 의존성 배열로 한 번만 실행
 
-    // cleanup function
-    return cleanup;
-  }, [loadVideo, uploadAndGenerateQR, cleanup]);
+  // 컴포넌트 언마운트 시에만 cleanup 실행
+  useEffect(() => {
+    return () => {
+      console.log('🧹 QRPage cleanup 실행');
+      cleanup();
+    };
+  }, []); // cleanup 함수를 의존성에서 제거
 
   return (
     <div className={styles.pageWrapper}>

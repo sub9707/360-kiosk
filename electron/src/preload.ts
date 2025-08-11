@@ -1,9 +1,9 @@
 // src/preload.ts
 import { ipcRenderer } from 'electron';
+import path from 'path';
 
 console.log('🔧 [Preload] Preload script starting (contextIsolation: false mode)...');
 
-// contextIsolation: false일 때는 window 객체에 직접 할당
 declare global {
   interface Window {
     electron: {
@@ -15,14 +15,13 @@ declare global {
         removeListener: (channel: string, listener: (...args: any[]) => void) => void;
         removeAllListeners: (channel: string) => void;
       };
-      // 🆕 환경설정 API 추가
       getEnvConfig: () => Promise<any>;
+      getLogoPath: () => string; // 🆕 추가
     };
   }
 }
 
 try {
-  // contextIsolation: false일 때는 window에 직접 할당
   (window as any).electron = {
     ipcRenderer: {
       invoke: (channel: string, ...args: any[]) => {
@@ -48,10 +47,16 @@ try {
         ipcRenderer.removeAllListeners(channel);
       }
     },
-    // 🆕 환경설정 가져오기 API 추가
     getEnvConfig: () => {
       console.log('🔧 [Preload] getEnvConfig called');
       return ipcRenderer.invoke('get-env-config');
+    },
+    getLogoPath: () => {
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        return '/src/renderer/assets/images/logo.png';
+      }
+      return `file://${path.join(process.resourcesPath, 'assets', 'logo.png')}`;
     }
   };
 
@@ -60,7 +65,6 @@ try {
   console.error('❌ [Preload] Failed to assign window.electron:', error);
 }
 
-// DOM 로드 확인
 window.addEventListener('DOMContentLoaded', () => {
   console.log('✅ [Preload] DOM loaded, window.electron available:', !!(window as any).electron);
 });

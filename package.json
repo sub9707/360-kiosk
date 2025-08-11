@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "google-auth-library": "^10.2.1",
+    "open": "^10.2.0"
+  }
+}

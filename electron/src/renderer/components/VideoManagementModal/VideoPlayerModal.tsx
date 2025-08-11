@@ -134,7 +134,7 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ isOpen, onClose, vi
 
                 {showQr && qrBlobUrl && (
                     <div className={styles.qrOverlay} onClick={() => setShowQr(false)}>
-                        <div className={styles.qrContent} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.qrContent} onClick={() => setShowQr(false)}>
                             <h3>QR 코드</h3>
                             <img src={qrBlobUrl} alt="QR Code" className={styles.qrImage} />
                             <p>클릭하여 닫기</p>
