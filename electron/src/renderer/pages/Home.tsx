@@ -1,5 +1,3 @@
-// src/renderer/Home.tsx (리팩토링)
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Home.module.scss';

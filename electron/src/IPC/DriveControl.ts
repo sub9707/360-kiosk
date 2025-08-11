@@ -1,21 +1,27 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, shell } from 'electron';
 import fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { google } from 'googleapis';
+import type { drive_v3 } from 'googleapis';
 import QRCode from 'qrcode';
 import { getAppResourcePath, getExecutablePath, getVideoAssetPaths } from '../utils/path-utils';
+import http from 'http';
+import url from 'url';
 
-// Google Drive 인증 설정
-const KEYFILEPATH = getAppResourcePath('credentials.json', 'credentials.json');
+// OAuth 2.0 인증 설정
+// credentials.json은 앱 리소스에서 가져옴
+const CREDENTIALS_PATH = getAppResourcePath('oauth2_credentials.json', 'oauth2_credentials.json');
+
+// token.json은 사용자 데이터 디렉토리에 저장
+const TOKEN_PATH = path.join(app.getPath('userData'), 'google_drive_token.json');
+
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: KEYFILEPATH,
-  scopes: SCOPES,
-});
-const drive = google.drive({ version: 'v3', auth });
+// Google Drive 인스턴스
+let drive: drive_v3.Drive | null = null;
+let authClient: any = null;
 
 // PC에 영상 파일을 저장할 기본 디렉토리
 const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
@@ -23,24 +29,519 @@ const VIDEO_SAVE_BASE_DIR = process.env.BASE_DIRECTORY;
 // Google Drive 폴더 ID
 const DRIVE_FOLDER_ID_FROM_ENV = process.env.DRIVE_FOLDER_ID;
 
+/**
+ * OAuth2Client 인스턴스를 생성합니다.
+ */
+async function createOAuth2Client(): Promise<any> {
+  try {
+    console.log('🔧 [DriveControl] OAuth 클라이언트 설정 파일 읽기:', CREDENTIALS_PATH);
+
+    const content = await fsPromises.readFile(CREDENTIALS_PATH, 'utf-8');
+    const credentials = JSON.parse(content);
+
+    console.log('📋 [DriveControl] 인증서 타입 확인:', {
+      hasInstalled: !!credentials.installed,
+      hasWeb: !!credentials.web
+    });
+
+    // web 타입을 우선 사용 (localhost 리다이렉션을 위해)
+    const clientInfo = credentials.web || credentials.installed;
+
+    if (!clientInfo) {
+      throw new Error('OAuth 클라이언트 정보를 찾을 수 없습니다. credentials 파일을 확인해주세요.');
+    }
+
+    const { client_secret, client_id, redirect_uris } = clientInfo;
+
+    if (!client_id || !client_secret) {
+      throw new Error('client_id 또는 client_secret이 없습니다.');
+    }
+
+    // redirect_uri 설정
+    let redirectUri = 'http://localhost:3000';
+
+    if (redirect_uris && redirect_uris.length > 0) {
+      // localhost:3000이 있는지 확인
+      const localhostUri = redirect_uris.find((uri: string) =>
+        uri.includes('localhost:3000') || uri.includes('127.0.0.1:3000')
+      );
+
+      if (localhostUri) {
+        redirectUri = localhostUri;
+      } else {
+        redirectUri = redirect_uris[0];
+      }
+    }
+
+    console.log('📍 [DriveControl] 사용할 Redirect URI:', redirectUri);
+
+    // Google OAuth2 클라이언트 생성
+    const oAuth2Client = new google.auth.OAuth2(
+      client_id,
+      client_secret,
+      redirectUri
+    );
+
+    console.log('✅ [DriveControl] OAuth2 클라이언트 생성 완료');
+    return oAuth2Client;
+
+  } catch (error: any) {
+    console.error('❌ [DriveControl] OAuth 클라이언트 생성 실패:', error);
+
+    if (error.code === 'ENOENT') {
+      throw new Error(`OAuth 설정 파일을 찾을 수 없습니다: ${CREDENTIALS_PATH}\n프로그램을 다시 설치하거나 파일 경로를 확인해주세요.`);
+    } else if (error instanceof SyntaxError) {
+      throw new Error(`OAuth 설정 파일이 올바른 JSON 형식이 아닙니다: ${CREDENTIALS_PATH}\nGoogle Cloud Console에서 새로운 인증서를 다운로드해주세요.`);
+    }
+
+    throw new Error(`OAuth 클라이언트 설정 실패: ${error.message}`);
+  }
+}
+
+/**
+ * 저장된 토큰 파일을 읽어옵니다.
+ */
+async function loadSavedCredentialsIfExist(): Promise<any> {
+  try {
+    // 토큰 파일이 존재하는지 확인
+    await fsPromises.access(TOKEN_PATH);
+
+    const tokenContent = await fsPromises.readFile(TOKEN_PATH, 'utf-8');
+    const token = JSON.parse(tokenContent);
+
+    const oAuth2Client = await createOAuth2Client();
+    oAuth2Client.setCredentials(token);
+
+    console.log('📁 [DriveControl] 토큰 파일 위치:', TOKEN_PATH);
+
+    // 토큰이 만료되었는지 확인하고 필요시 갱신
+    if (token.expiry_date && token.expiry_date < Date.now()) {
+      console.log('🔄 [DriveControl] 토큰 만료됨, 갱신 시도...');
+      if (token.refresh_token) {
+        try {
+          const { credentials } = await oAuth2Client.refreshAccessToken();
+          oAuth2Client.setCredentials(credentials);
+          await saveCredentials(oAuth2Client);
+          console.log('✅ [DriveControl] 토큰 갱신 완료');
+        } catch (refreshError) {
+          console.error('❌ [DriveControl] 토큰 갱신 실패:', refreshError);
+          return null;
+        }
+      }
+    }
+
+    return oAuth2Client;
+  } catch (err) {
+    console.log('ℹ️ [DriveControl] 저장된 토큰이 없습니다. 위치:', TOKEN_PATH);
+    return null;
+  }
+}
+
+/**
+ * 인증된 credentials를 토큰 파일로 저장합니다.
+ */
+async function saveCredentials(client: any) {
+  const tokens = client.credentials;
+
+  // 사용자 데이터 디렉토리가 없으면 생성
+  const userDataDir = path.dirname(TOKEN_PATH);
+  await fsPromises.mkdir(userDataDir, { recursive: true });
+
+  await fsPromises.writeFile(TOKEN_PATH, JSON.stringify(tokens, null, 2));
+  console.log('💾 [DriveControl] 토큰 저장 완료:', TOKEN_PATH);
+}
+
+/**
+ * 브라우저를 통한 OAuth 인증을 수행합니다.
+ */
+async function authenticateWithBrowser(): Promise<any> {
+  const oAuth2Client = await createOAuth2Client();
+
+  return new Promise((resolve, reject) => {
+    let serverClosed = false;
+
+    const server = http.createServer(async (req, res) => {
+      try {
+        console.log('🌐 [DriveControl] 요청 수신:', req.url);
+
+        const queryUrl = url.parse(req.url!, true);
+        console.log('📋 [DriveControl] 파싱된 쿼리:', queryUrl.query);
+
+        // 루트 경로 또는 빈 경로에서 처리
+        if (queryUrl.pathname === '/' || queryUrl.pathname === '') {
+          const code = queryUrl.query.code as string;
+          const error = queryUrl.query.error as string;
+
+          if (error) {
+            console.error('❌ [DriveControl] OAuth 에러:', error);
+            res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(`
+              <html>
+                <head>
+                  <title>인증 실패</title>
+                  <meta charset="utf-8">
+                </head>
+                <body>
+                  <h1>❌ 인증 실패</h1>
+                  <p>OAuth 인증 중 오류가 발생했습니다: ${error}</p>
+                  <p>창을 닫고 다시 시도해주세요.</p>
+                </body>
+              </html>
+            `);
+
+            if (!serverClosed) {
+              serverClosed = true;
+              server.close();
+              reject(new Error(`OAuth 인증 실패: ${error}`));
+            }
+            return;
+          }
+
+          if (code) {
+            console.log('✅ [DriveControl] 인증 코드 수신:', code.substring(0, 10) + '...');
+
+            // 성공 페이지 먼저 응답
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(`
+  <html>
+    <head>
+      <title>인증 완료</title>
+      <meta charset="utf-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+          background: white;
+          padding: 40px;
+          border-radius: 15px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          text-align: center;
+          max-width: 400px;
+        }
+        h1 { 
+          color: #4CAF50; 
+          margin-bottom: 20px;
+          font-size: 28px;
+        }
+        p { 
+          color: #666; 
+          line-height: 1.6;
+          font-size: 16px;
+        }
+        .spinner {
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #4CAF50;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          animation: spin 1s linear infinite;
+          margin: 20px auto;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .auto-close {
+          color: #999;
+          font-size: 14px;
+          margin-top: 20px;
+        }
+      </style>
+      <script>
+        let countdown = 5;
+        let countdownInterval;
+        
+        function updateCountdown() {
+          const element = document.getElementById('countdown');
+          if (element && countdown >= 0) {
+            element.textContent = countdown;
+            countdown--;
+          }
+          
+          // 카운트다운이 0 미만이 되면 인터벌 정리하고 창 닫기
+          if (countdown < 0) {
+            if (countdownInterval) {
+              clearInterval(countdownInterval);
+            }
+            window.close();
+          }
+        }
+        
+        // 페이지 로드 후 카운트다운 시작
+        window.addEventListener('DOMContentLoaded', () => {
+          // 초기 표시
+          updateCountdown();
+          
+          // 1초마다 업데이트
+          countdownInterval = setInterval(updateCountdown, 1000);
+        });
+        
+        // 백업: 5초 후 강제로 창 닫기
+        setTimeout(() => {
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+          }
+          window.close();
+        }, 5000);
+      </script>
+    </head>
+    <body>
+      <div class="container">
+        <h1>✅ 인증 완료!</h1>
+        <div class="spinner"></div>
+        <p>Google Drive 연결이 성공적으로 완료되었습니다.</p>
+        <p>앱으로 돌아가서 작업을 계속하세요.</p>
+        <p class="auto-close">
+          <span id="countdown">5</span>초 후 자동으로 닫힙니다...
+        </p>
+      </div>
+    </body>
+  </html>
+`);
+
+            // 서버 닫기 (중복 방지)
+            if (!serverClosed) {
+              serverClosed = true;
+
+              // 잠시 대기 후 서버 닫기 (응답이 완전히 전송되도록)
+              setTimeout(() => {
+                server.close();
+              }, 100);
+            }
+
+            // 토큰 교환 비동기 처리
+            setTimeout(async () => {
+              try {
+                console.log('🔄 [DriveControl] 토큰 교환 시작...');
+                const { tokens } = await oAuth2Client.getToken(code);
+                console.log('✅ [DriveControl] 토큰 교환 성공');
+
+                oAuth2Client.setCredentials(tokens);
+
+                // 토큰 저장
+                await saveCredentials(oAuth2Client);
+                console.log('💾 [DriveControl] 토큰 저장 완료');
+
+                resolve(oAuth2Client);
+              } catch (tokenError) {
+                console.error('❌ [DriveControl] 토큰 교환 실패:', tokenError);
+                reject(new Error(`토큰 교환 실패: ${tokenError.message} `));
+              }
+            }, 200);
+
+          } else {
+            console.warn('⚠️ [DriveControl] 인증 코드가 없음');
+            res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(`
+              < html >
+              <head>
+              <title>인증 실패 </title>
+                < meta charset = "utf-8" >
+                  </head>
+                  < body >
+                  <h1>❌ 인증 실패 </h1>
+                    < p > 인증 코드를 받지 못했습니다.</>
+                      < p > 창을 닫고 다시 시도해주세요.</>
+                        </body>
+                        </html>
+                          `);
+
+            if (!serverClosed) {
+              serverClosed = true;
+              server.close();
+              reject(new Error('인증 코드를 받지 못했습니다.'));
+            }
+          }
+        } else {
+          // 다른 경로 요청 처리
+          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end('<h1>404 - Page Not Found</h1>');
+        }
+      } catch (error) {
+        console.error('❌ [DriveControl] 서버 에러:', error);
+
+        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('<h1>500 - Internal Server Error</h1>');
+
+        if (!serverClosed) {
+          serverClosed = true;
+          server.close();
+          reject(error);
+        }
+      }
+    });
+
+    // 서버 에러 처리
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌[DriveControl] 포트 3000이 이미 사용 중입니다.`);
+        reject(new Error('포트 3000이 이미 사용 중입니다. 다른 프로그램을 종료하거나 잠시 후 다시 시도해주세요.'));
+      } else {
+        console.error('❌ [DriveControl] 서버 에러:', error);
+        reject(error);
+      }
+    });
+
+    // 랜덤 포트 대신 3000 포트 고정 사용
+    const PORT = 3000;
+
+    server.listen(PORT, () => {
+      console.log(`🌐[DriveControl] OAuth 서버 시작: http://localhost:${PORT}`);
+
+      // OAuth URL 생성
+      const authUrl = oAuth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: SCOPES,
+        prompt: 'consent',
+        include_granted_scopes: true, // 추가 권한 포함
+      });
+
+      console.log('🔗 [DriveControl] 인증 URL 생성 완료');
+      console.log('🔗 [DriveControl] 브라우저에서 인증을 진행해주세요...');
+
+      // 브라우저에서 인증 URL 열기
+      shell.openExternal(authUrl).catch(browserError => {
+        console.error('❌ [DriveControl] 브라우저 열기 실패:', browserError);
+        console.log('🔗 [DriveControl] 수동으로 다음 URL을 브라우저에서 열어주세요:');
+        console.log(authUrl);
+      });
+    });
+
+    // 타임아웃 설정 (10분으로 증가)
+    const timeout = setTimeout(() => {
+      if (!serverClosed) {
+        serverClosed = true;
+        console.log('⏰ [DriveControl] OAuth 인증 타임아웃 (10분)');
+        server.close();
+        reject(new Error('OAuth 인증 시간 초과 (10분). 다시 시도해주세요.'));
+      }
+    }, 10 * 60 * 1000);
+
+    // Promise가 resolve/reject될 때 타임아웃 클리어
+    const originalResolve = resolve;
+    const originalReject = reject;
+
+    resolve = (value: any) => {
+      clearTimeout(timeout);
+      originalResolve(value);
+    };
+
+    reject = (reason: any) => {
+      clearTimeout(timeout);
+      originalReject(reason);
+    };
+  });
+}
+
+/**
+ * OAuth 2.0 인증을 수행합니다.
+ */
+async function authorize(): Promise<any> {
+  let client = await loadSavedCredentialsIfExist();
+
+  if (client) {
+    console.log('✅ [DriveControl] 저장된 토큰으로 인증 성공');
+    return client;
+  }
+
+  console.log('🔐 [DriveControl] 새로운 OAuth 인증 시작...');
+
+  // 브라우저를 통한 인증 수행
+  client = await authenticateWithBrowser();
+
+  console.log('✅ [DriveControl] OAuth 인증 완료');
+
+  return client;
+}
+
+/**
+ * Google Drive API를 초기화합니다.
+ */
+async function initializeDrive() {
+  if (!drive || !authClient) {
+    try {
+      authClient = await authorize();
+      drive = google.drive({ version: 'v3', auth: authClient });
+      console.log('✅ [DriveControl] Google Drive API 초기화 완료');
+    } catch (error) {
+      console.error('❌ [DriveControl] Google Drive API 초기화 실패:', error);
+      throw error;
+    }
+  }
+  return drive;
+}
+
+// OAuth 재인증 핸들러 (UI에서 호출 가능)
+ipcMain.handle('reauthorize-drive', async () => {
+  try {
+    console.log('🔄 [DriveControl] OAuth 재인증 시작...');
+
+    // 기존 토큰 삭제
+    try {
+      await fsPromises.unlink(TOKEN_PATH);
+      console.log('✅ [DriveControl] 기존 토큰 삭제 완료');
+    } catch (err) {
+      console.log('ℹ️ [DriveControl] 기존 토큰이 없음');
+    }
+
+    // Drive 인스턴스 초기화
+    drive = null;
+    authClient = null;
+
+    // 재인증
+    await initializeDrive();
+
+    return { success: true, message: 'OAuth 재인증 완료' };
+  } catch (error: any) {
+    console.error('❌ [DriveControl] OAuth 재인증 실패:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 인증 상태 확인 핸들러
+ipcMain.handle('check-drive-auth', async () => {
+  try {
+    const client = await loadSavedCredentialsIfExist();
+    if (client) {
+      // 토큰 유효성 검사를 위한 간단한 API 호출
+      const driveInstance = google.drive({ version: 'v3', auth: client });
+      await driveInstance.about.get({ fields: 'user' });
+      return { authenticated: true };
+    }
+    return { authenticated: false };
+  } catch (error) {
+    console.error('❌ [DriveControl] 인증 상태 확인 실패:', error);
+    return { authenticated: false };
+  }
+});
 
 ipcMain.handle('edit-video', async (_event, inputPath: string) => {
   try {
     const startTime = Date.now();
     console.log('🎬 [DriveControl] 영상 편집 시작:', inputPath);
 
+    // Drive 초기화 (필요한 경우)
+    await initializeDrive();
+
     // Kiosk 폴더 ID 유효성 검사
     if (!DRIVE_FOLDER_ID_FROM_ENV) {
-      throw new Error('DRIVE_FOLDER_ID is not defined in the environment variables. Please check your .env file.');
+      console.warn('⚠️ DRIVE_FOLDER_ID is not defined. Will use root folder.');
     }
 
     const parsed = path.parse(inputPath);
     const outputPath = path.join(parsed.dir, `edited_${parsed.name}.mp4`);
-    
+
     // 🆕 FFmpeg 경로 가져오기 및 확인
     console.log('🔧 [DriveControl] FFmpeg 경로 확인 중...');
     const ffmpegPath = getExecutablePath('src/exe/ffmpeg/ffmpeg.exe', 'ffmpeg.exe');
-    
+
     // 🔧 FFmpeg 파일 존재 여부 확인
     if (!fs.existsSync(ffmpegPath)) {
       console.error('❌ [DriveControl] FFmpeg 실행 파일을 찾을 수 없습니다:', ffmpegPath);
@@ -270,6 +771,9 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
   try {
     console.log('🚀 Starting Google Drive upload for:', filePath);
 
+    // Drive 초기화
+    await initializeDrive();
+
     // 파일 존재 확인
     if (!await fsPromises.access(filePath).then(() => true).catch(() => false)) {
       console.error('❌ Upload failed: File not found:', filePath);
@@ -282,13 +786,12 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
     const folderName = getTodayFolder(); // 예: 20250612
     console.log('📁 Target Google Drive folder:', folderName);
 
-
     if (!DRIVE_FOLDER_ID_FROM_ENV) {
-      throw new Error('KIOSK_FOLDER_ID is not defined in the environment variables. Cannot upload to Google Drive.');
+      // 폴더 ID가 없으면 루트에 생성
+      console.warn('⚠️ DRIVE_FOLDER_ID not set, will create folder in root');
     }
 
-    const driveFolderId = DRIVE_FOLDER_ID_FROM_ENV; 
-    const targetFolderId = await findOrCreateFolder(folderName, driveFolderId); 
+    const targetFolderId = await findOrCreateFolder(folderName, DRIVE_FOLDER_ID_FROM_ENV || 'root');
     console.log('📁 Google Drive folder ID:', targetFolderId);
 
     // 1️⃣ 영상 업로드
@@ -376,6 +879,17 @@ ipcMain.handle('upload-video-and-qr', async (_event, filePath: string) => {
 
   } catch (error: any) {
     console.error('❌ Google Drive 업로드 오류:', error);
+
+    // OAuth 토큰 만료 에러 처리
+    if (error.code === 401 || error.message?.includes('invalid_grant')) {
+      console.log('🔄 [DriveControl] 토큰 만료 감지, 재인증 필요');
+      return {
+        success: false,
+        error: 'OAuth 토큰이 만료되었습니다. 재인증이 필요합니다.',
+        requiresReauth: true
+      };
+    }
+
     return { success: false, error: error.message };
   }
 });
@@ -424,6 +938,8 @@ export function getTodayFolder(): string {
 }
 
 async function findOrCreateFolder(name: string, parentId: string): Promise<string> {
+  await initializeDrive();
+
   const list = await drive.files.list({
     q: `'${parentId}' in parents and name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id, name)',

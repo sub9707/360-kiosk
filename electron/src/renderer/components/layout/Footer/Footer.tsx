@@ -1,6 +1,6 @@
+// src/renderer/components/Footer/Footer.tsx
 import React from 'react';
 import styles from './Footer.module.scss';
-import Logo from '/src/renderer/assets/icons/logo.png';
 import { useEnvConfig } from '../../../hooks/useEnvConfig';
 
 interface FooterProps {
@@ -14,17 +14,23 @@ const Footer: React.FC<FooterProps> = ({
 }) => {
   const { config } = useEnvConfig();
 
+  // 로고 경로는 preload에서 가져오기
+  const logoSrc = window.electron.getLogoPath();
+
   return (
     <div className={`${styles.footer} ${styles[position]}`}>
       {(variant === 'logo' || variant === 'both') && (
         <div className={styles.logoWrapper}>
-          <img src={Logo} alt="logo" />
+          <img src={logoSrc} alt="logo" />
           <div className={styles.divider} />
         </div>
       )}
-      
-      {(variant === 'copyright' || variant === 'both') && config?.copyright && (
-        <small>&copy; 2025 HOWDOYOUDO. All rights reserved.</small>
+
+      {(variant === 'copyright' || variant === 'both') && 
+        config?.copyright && (
+          <small>
+            &copy; 2025 HOWDOYOUDO. All rights reserved.
+          </small>
       )}
     </div>
   );
