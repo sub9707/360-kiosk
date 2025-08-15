@@ -19,7 +19,7 @@
 ---
 
 ## 목차
-- [프로젝트 개요](# 360도 촬영 및 편집 애플리케이션)
+
 
 
 
@@ -28,7 +28,7 @@
 
 <div align="center">
   
-  ### iOS & Android 지원
+  ### Android 지원
   
   <table>
     <tr>
@@ -39,33 +39,23 @@
       </td>
     </tr>
   </table>
-  
-  <!-- 모바일 앱 다운로드 링크 -->
-  <p>
-    <a href="https://apps.apple.com/app/your-app">
-      <img src="https://img.shields.io/badge/Download_on_the-App_Store-black?style=for-the-badge&logo=apple&logoColor=white" alt="App Store"/>
-    </a>
-    <a href="https://play.google.com/store/apps/details?id=your.app">
-      <img src="https://img.shields.io/badge/Get_it_on-Google_Play-green?style=for-the-badge&logo=google-play&logoColor=white" alt="Google Play"/>
-    </a>
   </p>
   
 </div>
 
 ### 📱 모바일 앱 주요 기능
 
-- ✨ **기능 1**: 기능에 대한 설명
-- 🎨 **기능 2**: 기능에 대한 설명  
-- 🔒 **기능 3**: 기능에 대한 설명
-- 📊 **기능 4**: 기능에 대한 설명
+- **촬영 신호 송수신**: 일렉트론 앱에서 촬영 신호를 수신하여 15초간 동영상 촬영을 진행합니다.
+- **동영상 저장 및 송신**: 촬영 기기 스토리지에 임시 파일로 저장하고, 송신이 완료되면 즉시 삭제합니다.  
+- **제어기기 연결상태 출력**: 일렉트론 앱과의 연결 상태를 실시간으로 출력합니다.
 
 ---
 
-## 💻 데스크톱 앱
+## 💻 일렉트론 앱
 
 <div align="center">
   
-  ### Windows, macOS, Linux 지원
+  ### Windows
   
   <table>
     <tr>
@@ -104,27 +94,36 @@
     </tr>
   </table>
   
-  <!-- 데스크톱 앱 다운로드 링크 -->
-  <p>
-    <a href="https://github.com/username/project/releases/latest">
-      <img src="https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Windows"/>
-    </a>
-    <a href="https://github.com/username/project/releases/latest">
-      <img src="https://img.shields.io/badge/Download-macOS-lightgrey?style=for-the-badge&logo=apple&logoColor=white" alt="macOS"/>
-    </a>
-    <a href="https://github.com/username/project/releases/latest">
-      <img src="https://img.shields.io/badge/Download-Linux-orange?style=for-the-badge&logo=linux&logoColor=white" alt="Linux"/>
-    </a>
-  </p>
-  
 </div>
 
-### 💻 데스크톱 앱 주요 기능
+### 페이지별 주요 기능
 
-- 🖥️ **크로스 플랫폼**: Windows, macOS, Linux 모두 지원
-- ⚡ **고성능**: 네이티브 수준의 성능
-- 🎯 **직관적 UI**: 사용하기 쉬운 인터페이스
-- 🔄 **실시간 동기화**: 모바일 앱과 데이터 동기화
+**Main 페이지**
+
+1. 최근 촬영된 편집 영상을 배경 영상으로 출력합니다. 
+
+2. 파일관리자를 통해 로컬 드라이브의 저장된 영상을 삭제하여 영상 노출을 원하지않는 참여자의 영상을 제거할 수 있습니다.
+단, 구글드라이브에 저장되는 영상은 삭제되지 않음.
+또한 파일관리자에서 영상과 함께 저장된 QR 코드를 확인할 수 있습니다.
+
+**Film 페이지**
+
+1. 모바일 앱과의 연결상태 확인 및 연결 시도
+
+2. 촬영 시작 신호 송신
+
+3. 촬영 중지, 재촬영 기능
+
+4. 동영상 편집 시작
+
+5. QR 코드 생성 및 로컬 & 구글 드라이브 저장
+
+**Result 페이지**
+
+1. 처리된 결과 영상 확인
+
+2. QR 코드 출력
+
 
 ---
 
@@ -134,95 +133,30 @@
 
 - Node.js 18.0.0 이상
 - npm 또는 yarn
-- React Native CLI (모바일 앱 개발용)
-- Android Studio / Xcode (모바일 앱 개발용)
+- Android Studio (모바일 앱 개발용)
+- 구글 드라이브 OAuth2.0 Credential Key 발급 필요
 
 ### 🛠️ 설치 및 실행
 
 ```bash
 # 저장소 클론
-git clone https://github.com/username/project-name.git
-cd project-name
+git clone https://github.com/sub9707/360-kiosk
+cd 360-kiosk
 
+# 일렉트론 앱 실행
+cd electron
 # 의존성 설치
 npm install
 
-# 모바일 앱 실행 (iOS)
-cd mobile
-npx react-native run-ios
-
-# 모바일 앱 실행 (Android)
-npx react-native run-android
-
-# 데스크톱 앱 실행
-cd desktop
-npm run dev
+npm start
 ```
 
 ### 🏗️ 빌드
 
 ```bash
-# 모바일 앱 빌드
-cd mobile
-npm run build:ios
-npm run build:android
-
 # 데스크톱 앱 빌드
-cd desktop
-npm run build
-npm run dist
-```
-
----
-
-## 🏗️ 프로젝트 구조
-
-```
-360-kiosk/
-├── electron/
-│   ├── .vite/
-│   ├── src/
-│   │   ├── IPC/                  # IPC 관련 코드
-│   │   ├── exe/                  # 실행 파일 관련 코드
-│   │   ├── main.ts               # 메인 프로세스
-│   │   ├── preload.ts            # 프리로드 스크립트
-│   │   ├── renderer/
-│   │   │   ├── api/              # API 관련 코드
-│   │   │   ├── app.tsx           # 앱 루트 컴포넌트
-│   │   │   ├── assets/           # 자산 파일들
-│   │   │   ├── components/       # React 컴포넌트들
-│   │   │   ├── hooks/            # 커스텀 훅들
-│   │   │   ├── pages/            # 페이지 컴포넌트들
-│   │   │   ├── styles/           # 스타일 파일들
-│   │   │   └── types/            # 타입 정의
-│   │   ├── root.tsx              # 루트 컴포넌트
-│   │   ├── types/                # 타입 정의
-│   │   └── utils/                # 유틸리티 함수들
-│   ├── vite.main.config.ts
-│   ├── vite.preload.config.ts
-│   ├── vite.renderer.config.ts
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── mobile_app/
-│   ├── app/
-│   │   ├── src/                  # Java/Kotlin 소스 코드
-│   │   ├── res/                  # 리소스 파일들
-│   │   └── AndroidManifest.xml   # 앱 매니페스트
-│   ├── gradle/
-│   │   └── wrapper/
-│   ├── .gradle/
-│   ├── .kotlin/
-│   ├── key/
-│   │   └── release-key.jks       # 릴리즈 서명 키
-│   ├── build.gradle.kts
-│   ├── gradle.properties
-│   ├── local.properties
-│   └── settings.gradle.kts
-│
-└── readme/
-    ├── docs/                     # 문서 파일들
-    └── images/                   # 문서 이미지들
+cd electron
+npm run make
 ```
 
 ---
@@ -230,23 +164,17 @@ npm run dist
 ## 🛠️ 기술 스택
 
 ### 모바일 앱
-- **React Native**: 크로스 플랫폼 모바일 개발
-- **TypeScript**: 정적 타입 지원
-- **React Navigation**: 네비게이션
-- **Async Storage**: 로컬 저장소
-- **React Query**: 서버 상태 관리
 
 ### 데스크톱 앱
 - **Electron**: 크로스 플랫폼 데스크톱 앱
 - **React**: UI 라이브러리
 - **TypeScript**: 정적 타입 지원
-- **Webpack**: 번들링
+- **vite**: 번들링
 - **Electron Builder**: 앱 패키징
 
 ### 공통
 - **ESLint**: 코드 품질 관리
 - **Prettier**: 코드 포맷팅
-- **Jest**: 테스트 프레임워크
 
 ---
 
