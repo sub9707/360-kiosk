@@ -1,6 +1,21 @@
 # 360 Kiosk Project
 
-360도 키오스크 프로젝트입니다. 데스크톱과 모바일 애플리케이션을 포함하고 있습니다.
+(주)하우두유두 이벤트 부스에서 사용된 360 촬영 일렉트론과 안드로이드 모바일 어플리케이션입니다.
+
+기본 구조는 React 일렉트론과 안드로이드 모바일 앱이 웹소켓 통신하여 촬영 신호를 송수신하고,
+
+모바일 앱이 촬영한 동영상을 전달하여 일렉트론 앱에서 편집, QR 코드 생성, 구글 드라이브와 로컬 드라이브 저장하는 구조입니다.
+
+사용자는 촬영된 동영상을 생성된 QR 코드로 접근하여 시청 및 다운로드 할 수 있습니다.
+
+<br/>
+
+## 시연 및 사용 (2025.08.14 성암아트홀 설윤 하이볼 팬미팅)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/43c977b3-0bbd-4785-9a0d-62ca1dbeea2b" width="400"/>
+  <img src="https://github.com/user-attachments/assets/2f43a4c4-5fca-4ddf-a484-fe1ab382dc06" width="400"/>
+</div>
+
 
 
 ## 📱 모바일 앱
