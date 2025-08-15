@@ -1,4 +1,4 @@
-# 360 Kiosk Project
+# 360도 촬영 및 편집 애플리케이션 
 
 (주)하우두유두 이벤트 부스에서 사용된 360 촬영 일렉트론과 안드로이드 모바일 어플리케이션입니다.
 
@@ -15,6 +15,12 @@
   <img src="https://github.com/user-attachments/assets/43c977b3-0bbd-4785-9a0d-62ca1dbeea2b" width="400"/>
   <img src="https://github.com/user-attachments/assets/2f43a4c4-5fca-4ddf-a484-fe1ab382dc06" width="400"/>
 </div>
+
+---
+
+## 목차
+- [프로젝트 개요](# 360도 촬영 및 편집 애플리케이션)
+
 
 
 
