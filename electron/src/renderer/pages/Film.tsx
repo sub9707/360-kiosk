@@ -4,7 +4,6 @@ import styles from './Film.module.scss';
 
 // Components
 import Header from '../components/layout/Header/Header';
-import Footer from '../components/layout/Footer/Footer';
 import FilmStates from '../components/film/FilmStates/FilmStates';
 import StatusMessage from '../components/film/StatusMessage/StatusMessage';
 
@@ -144,7 +143,6 @@ const Film: React.FC = () => {
         </div>
       </div>
 
-      <Footer variant="logo" position="fixed" />
     </div>
   );
 };
