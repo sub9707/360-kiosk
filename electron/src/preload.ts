@@ -52,11 +52,16 @@ try {
       return ipcRenderer.invoke('get-env-config');
     },
     getLogoPath: () => {
-      const isDev = process.env.NODE_ENV === 'development';
+      const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+
       if (isDev) {
-        return '/src/renderer/assets/images/logo.png';
+        // 개발 모드: src/renderer/assets 경로
+        return `file://${path.join(__dirname, '../renderer/assets/images/logo.png').replace(/\\/g, '/')}`;
+      } else {
+        // 배포 모드: resources/assets/images/logo.png
+        const logoPath = path.join(process.resourcesPath, 'assets', 'images', 'logo.png');
+        return `file://${logoPath.replace(/\\/g, '/')}`;
       }
-      return `file://${path.join(process.resourcesPath, 'assets', 'logo.png')}`;
     }
   };
 

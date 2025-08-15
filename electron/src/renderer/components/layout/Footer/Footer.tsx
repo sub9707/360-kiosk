@@ -14,14 +14,11 @@ const Footer: React.FC<FooterProps> = ({
 }) => {
   const { config } = useEnvConfig();
 
-  // 로고 경로는 preload에서 가져오기
-  const logoSrc = window.electron.getLogoPath();
-
   return (
     <div className={`${styles.footer} ${styles[position]}`}>
       {(variant === 'logo' || variant === 'both') && (
         <div className={styles.logoWrapper}>
-          <img src={logoSrc} alt="logo" />
+          <img src={window.electron.getLogoPath()} alt="Logo" />
           <div className={styles.divider} />
         </div>
       )}
