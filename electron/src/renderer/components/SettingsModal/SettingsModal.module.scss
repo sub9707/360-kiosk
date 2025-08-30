@@ -14,7 +14,7 @@
 
 .modalContent {
     background-color: #1a1a1a;
-    padding: 25px;
+    padding: 2rem 5rem;
     border-radius: 15px;
     width: 100%;
     max-width: 600px;
@@ -62,15 +62,171 @@ h2 {
     width: 100%;
     flex-grow: 1;
     overflow-y: auto;
-    padding: 20px;
 }
 
+.modalHeader{
+    margin-bottom: 2rem;
+}
 
 .modalFooter {
-    padding: 20px;
+    padding: 0 25px 20px 25px;
     text-align: right;
+    margin-top: 2rem;
 }
 
+// 새로 추가된 설정 관련 스타일
+.settingSection {
+    margin-bottom: 30px;
+    width: 100%;
+    
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.settingHeader {
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: 'NanumBarunGothic';
+    user-select: none;
+}
+
+.inputGroup {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+    width: 100%;
+}
+
+.textInput {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    padding: 10px 16px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+    color: #f0f0f0;
+    font-size: 1rem;
+    font-family: 'NanumBarunGothic';
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+    
+    &:focus {
+        outline: none;
+        border-color: #3f51b5;
+    }
+    
+    &::placeholder {
+        color: #888;
+    }
+    
+    &[readonly] {
+        background-color: #222;
+        cursor: default;
+    }
+}
+
+.settingButton {
+    width: 80px;
+    height: 46px;
+    padding: 0;
+    background-color: #3f51b5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: 'NanumBarunGothic';
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    
+    &:hover {
+        background-color: #303f9f;
+    }
+}
+
+.browseButton {
+    width: 80px;
+    height: 46px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: 600;
+    font-family: 'NanumBarunGothic';
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    
+    &:hover {
+        background-color: #666;
+    }
+}
+
+// 저작권 토글 버튼 관련 스타일
+.toggleGroup {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.toggleLabel {
+    color: #f0f0f0;
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: 'NanumBarunGothic';
+    user-select: none;
+}
+
+.toggleButton {
+    position: relative;
+    width: 60px;
+    height: 30px;
+    background-color: #555;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    outline: none;
+    
+    &.active {
+        background-color: #3f51b5;
+    }
+    
+    &:hover {
+        opacity: 0.8;
+    }
+}
+
+.toggleSlider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    
+    .toggleButton.active & {
+        transform: translateX(30px);
+    }
+}
+
+// 기존 버튼 스타일들
 .exitButton {
     width: 100%;
     height: 5rem;
@@ -83,6 +239,8 @@ h2 {
     font-weight: 600;
     font-family: 'NanumBarunGothic';
     transition: background-color 0.2s ease;
+    margin-top: 2rem;
+    background-color: #3f51b5;
 
     &:hover {
         background-color: #303f9f;
@@ -91,8 +249,8 @@ h2 {
 
 .saveButton {
     background-color: #3f51b5;
-}
-.exitButton {
-    margin-top: 2rem;
-    background-color: #b53f3f;
+    
+    &:hover {
+        background-color: #303f9f;
+    }
 }
