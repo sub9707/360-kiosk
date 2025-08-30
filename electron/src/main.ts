@@ -125,6 +125,7 @@ async function loadIpcModules() {
   await import('./IPC/DriveControl');
   await import('./IPC/MobileControl');
   await import('./IPC/VideoControl');
+  await import('./IPC/SettingControl');
 
   ipcMain.handle('get-env-config', () => {
     return {

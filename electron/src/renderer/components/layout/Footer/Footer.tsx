@@ -1,5 +1,5 @@
 // src/renderer/components/Footer/Footer.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './Footer.module.scss';
 import { useEnvConfig } from '../../../hooks/useEnvConfig';
 
@@ -8,11 +8,26 @@ interface FooterProps {
   position?: 'fixed' | 'absolute';
 }
 
-const Footer: React.FC<FooterProps> = ({ 
-  variant = 'logo', 
-  position = 'fixed' 
+const Footer: React.FC<FooterProps> = ({
+  variant = 'logo',
+  position = 'fixed'
 }) => {
   const { config } = useEnvConfig();
+  const { ipcRenderer } = window.require("electron");
+  const [copyright, setCopyright] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const copyrightRes = await ipcRenderer.invoke('get-copyright-setting');
+        setCopyright(copyrightRes || false);
+      } catch (err) {
+        console.error("copyright 데이터 불러오는 중 오류 발생: ", err);
+      }
+    };
+
+      loadInitialData();
+  }, []);
 
   return (
     <div className={`${styles.footer} ${styles[position]}`}>
@@ -23,12 +38,12 @@ const Footer: React.FC<FooterProps> = ({
         </div>
       )}
 
-      {(variant === 'copyright' || variant === 'both') && 
-        config?.copyright && (
+      {(variant === 'copyright' || variant === 'both') &&
+        copyright && (
           <small>
             &copy; 2025 HOWDOYOUDO. All rights reserved.
           </small>
-      )}
+        )}
     </div>
   );
 };

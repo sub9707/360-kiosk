@@ -22,16 +22,17 @@ import { useVideo } from '../hooks/useVideo';
 const Home: React.FC = () => {
   const { config } = useEnvConfig();
   const { loadBackgroundVideo } = useVideo();
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [videoSource, setVideoSource] = useState<string>(sampleVideo);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [footerKey, setFooterKey] = useState(0);
 
   const startButtonRef = useRef<HTMLAnchorElement>(null);
 
   // 키보드 이벤트 처리
-  useKeyboard('PageUp', () => {}, startButtonRef);
+  useKeyboard('PageUp', () => { }, startButtonRef);
 
   // 배경 영상 로드
   useEffect(() => {
@@ -58,6 +59,12 @@ const Home: React.FC = () => {
     setIsVideoLoading(false);
   };
 
+  // SettingsModal이 닫힐 때 Footer 리렌더링
+  const handleSettingsModalClose = () => {
+    setIsSettingsModalOpen(false);
+    setFooterKey(prev => prev + 1);
+  };
+
   return (
     <div className={styles.pageWrapper}>
       {/* 배경화면 */}
@@ -82,9 +89,9 @@ const Home: React.FC = () => {
       {/* 상단 메인 UI */}
       <div className={styles.mainWrapper}>
         <div className={styles.mainContainer}>
-          <Link 
-            to="/film" 
-            ref={startButtonRef} 
+          <Link
+            to="/film"
+            ref={startButtonRef}
             className={styles.startBtn}
           >
             촬영 시작
@@ -92,34 +99,34 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <Footer variant="both" position="absolute" />
+      <Footer key={footerKey} variant="both" position="absolute" />
 
       {/* Settings Button */}
-      <button 
-        className={styles.settingsButton} 
+      <button
+        className={styles.settingsButton}
         onClick={() => setIsSettingsModalOpen(true)}
       >
         <img src={SettingIcon} alt="Settings" />
       </button>
 
       {/* Folder Icon Button */}
-      <button 
-        className={styles.folderButton} 
+      <button
+        className={styles.folderButton}
         onClick={() => setIsModalOpen(true)}
       >
         <img src={FolderIcon} alt="Manage Videos" />
       </button>
 
       {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={isSettingsModalOpen} 
-        onClose={() => setIsSettingsModalOpen(false)} 
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={handleSettingsModalClose}
       />
 
       {/* Video Management Modal */}
-      <VideoManagementModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <VideoManagementModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </div>
   );

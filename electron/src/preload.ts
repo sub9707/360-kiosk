@@ -16,7 +16,7 @@ declare global {
         removeAllListeners: (channel: string) => void;
       };
       getEnvConfig: () => Promise<any>;
-      getLogoPath: () => string; // 🆕 추가
+      getLogoPath: () => string;
     };
   }
 }
