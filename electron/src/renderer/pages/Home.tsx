@@ -1,63 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './Home.module.scss';
 
 // Assets
-import sampleVideo from '/src/renderer/assets/videos/sample-background.mp4';
+import backgroundImage from '/src/renderer/assets/images/home-background.png';
 import FolderIcon from '/src/renderer/assets/icons/folder.svg';
 import SettingIcon from '/src/renderer/assets/icons/setting.svg';
 
 // Components
 import Footer from '../components/layout/Footer/Footer';
-import Button from '../components/common/Button/Button';
-import VideoPlayer from '../components/common/VideoPlayer/VideoPlayer';
 import SettingsModal from '../components/SettingsModal/SettingsModal';
 import VideoManagementModal from '../components/VideoManagementModal/VideoManagementModal';
 
 // Hooks
-import { useEnvConfig } from '../hooks/useEnvConfig';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { useVideo } from '../hooks/useVideo';
 
 const Home: React.FC = () => {
-  const { config } = useEnvConfig();
-  const { loadBackgroundVideo } = useVideo();
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [videoSource, setVideoSource] = useState<string>(sampleVideo);
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [footerKey, setFooterKey] = useState(0);
 
   const startButtonRef = useRef<HTMLAnchorElement>(null);
 
   // 키보드 이벤트 처리
   useKeyboard('PageUp', () => { }, startButtonRef);
-
-  // 배경 영상 로드
-  useEffect(() => {
-    const loadVideo = async () => {
-      setIsVideoLoading(true);
-      const videoSrc = await loadBackgroundVideo(sampleVideo);
-      setVideoSource(videoSrc);
-      setIsVideoLoading(false);
-    };
-
-    loadVideo();
-  }, [loadBackgroundVideo]);
-
-  // 영상 에러 처리
-  const handleVideoError = (error: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-    console.error('❌ [Home] 영상 재생 오류:', error);
-    if (videoSource !== sampleVideo) {
-      setVideoSource(sampleVideo);
-    }
-  };
-
-  // 영상 로드 완료 처리
-  const handleVideoLoaded = () => {
-    setIsVideoLoading(false);
-  };
 
   // SettingsModal이 닫힐 때 Footer 리렌더링
   const handleSettingsModalClose = () => {
@@ -71,17 +37,11 @@ const Home: React.FC = () => {
       <div className={styles.backgroundWrapper}>
         <div className={styles.background}>
           <div className={styles.overlay} />
-          <VideoPlayer
-            src={videoSource}
-            loading={isVideoLoading}
-            autoPlay={true}
-            loop={true}
-            muted={true}
-            aspectRatio="cover"
-            onError={handleVideoError}
-            onLoadedData={handleVideoLoaded}
-            onCanPlay={handleVideoLoaded}
+          <img
+            src={backgroundImage}
+            alt=""
             className={styles.videoSource}
+            draggable={false}
           />
         </div>
       </div>
