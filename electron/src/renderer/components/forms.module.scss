@@ -17,8 +17,10 @@
 
   h3 {
     margin: 0;
-    font-size: 22px;
+    font-size: 15px;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
   }
 }
 
@@ -51,18 +53,17 @@
 
   input,
   select {
-    height: 52px;
-    padding: 0 16px;
+    height: 48px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg);
     border: 1px solid var(--border);
     font-size: 18px;
     outline: none;
     transition: border-color 0.2s, background 0.2s;
 
     &:focus {
-      border-color: var(--accent);
-      background: rgba(255, 255, 255, 0.07);
+      border-color: var(--text-dim);
     }
     &[readonly] {
       color: var(--text-dim);
@@ -81,21 +82,19 @@
 }
 
 .badge {
-  height: 32px;
-  padding: 0 14px;
+  height: 28px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
-  border-radius: var(--pill);
+  border-radius: 6px;
   background: var(--surface);
   font-size: 14px;
   color: var(--text-dim);
 }
 .badgeOk {
-  background: rgba(52, 211, 153, 0.14);
   color: var(--ok);
 }
 .badgeWarn {
-  background: rgba(251, 191, 36, 0.14);
   color: var(--warn);
 }
 
@@ -105,7 +104,7 @@
   align-self: center;
 }
 .err {
-  color: #fda4af;
+  color: var(--danger);
   font-size: 16px;
   align-self: center;
   word-break: break-all;
@@ -173,8 +172,8 @@
   margin: 12px 0 4px;
   padding: 18px 20px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 210, 63, 0.08);
-  border: 1px solid rgba(255, 210, 63, 0.3);
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
   animation: fade-in 0.2s ease both;
 
   p {
@@ -193,9 +192,8 @@
 }
 
 .bannerError {
-  background: rgba(244, 63, 94, 0.1);
-  border-color: rgba(244, 63, 94, 0.35);
-  color: #fda4af;
+  border-left-color: var(--danger);
+  color: var(--danger);
 }
 
 .bannerSub {
@@ -215,7 +213,6 @@
     color: var(--accent);
   }
   input {
-    border-color: rgba(255, 210, 63, 0.6) !important;
-    background: rgba(255, 210, 63, 0.06) !important;
+    border-color: var(--accent) !important;
   }
 }

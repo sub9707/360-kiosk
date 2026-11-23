@@ -22,7 +22,6 @@ export function Shell({
 }) {
   return (
     <div className={s.page}>
-      <div className={s.glow} />
       <header className={s.top}>
         <IconButton icon="home" label="처음으로" onClick={onHome} />
         <Stepper steps={STEPS} current={step} />

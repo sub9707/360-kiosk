@@ -42,24 +42,24 @@
 }
 
 .o_best {
-  background: rgba(255, 210, 63, 0.1);
-  border-color: rgba(255, 210, 63, 0.4);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
   strong {
     color: var(--accent);
   }
 }
 .o_recommended {
-  background: rgba(52, 211, 153, 0.1);
-  border-color: rgba(52, 211, 153, 0.35);
+  border-left: 3px solid var(--ok);
+  background: var(--surface);
   strong {
     color: var(--ok);
   }
 }
 .o_concern {
-  background: rgba(244, 63, 94, 0.1);
-  border-color: rgba(244, 63, 94, 0.35);
+  border-left: 3px solid var(--danger);
+  background: var(--surface);
   strong {
-    color: #fda4af;
+    color: var(--danger);
   }
 }
 
@@ -84,7 +84,7 @@
   gap: 20px;
   padding: 14px 16px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg);
   border: 1px solid var(--border);
 }
 
@@ -121,7 +121,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #fda4af;
+  color: var(--danger);
 }
 
 // ───────── 우려 · 권장 · 최고 막대 ─────────
@@ -140,12 +140,7 @@
   color: var(--text-faint);
   background: rgba(255, 255, 255, 0.05);
 
-  &:first-child {
-    border-radius: var(--pill) 4px 4px var(--pill);
-  }
-  &:last-child {
-    border-radius: 4px var(--pill) var(--pill) 4px;
-  }
+  border-radius: 4px;
 }
 
 .concern {
@@ -162,7 +157,6 @@
   background: var(--accent);
   color: var(--accent-ink);
   font-weight: 700;
-  box-shadow: 0 0 14px var(--accent-glow);
 }
 
 .time {
@@ -188,9 +182,9 @@
   gap: 10px;
   padding: 12px 16px;
   border-radius: var(--radius-sm);
-  background: rgba(244, 63, 94, 0.1);
-  border: 1px solid rgba(244, 63, 94, 0.35);
-  color: #fda4af;
+  background: var(--surface);
+  border-left: 3px solid var(--danger);
+  color: var(--text-dim);
   font-size: 14px;
   line-height: 1.6;
 

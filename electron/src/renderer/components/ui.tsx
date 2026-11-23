@@ -23,7 +23,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       data-hotkey={primaryHotkey ? 'primary' : undefined}
       {...rest}
     >
-      {icon && <Icon name={icon} size={size === 'md' ? 20 : 28} />}
+      {icon && size === 'md' && <Icon name={icon} size={18} />}
       <span>{children}</span>
     </button>
   );
@@ -37,7 +37,7 @@ export function IconButton({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string }) {
   return (
     <button className={`${s.iconBtn} ${className}`} aria-label={label} title={label} {...rest}>
-      <Icon name={icon} size={26} />
+      <Icon name={icon} size={24} />
     </button>
   );
 }
@@ -109,7 +109,7 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
     <ol className={s.stepper}>
       {steps.map((label, i) => (
         <li key={label} className={i < current ? s.stepDone : i === current ? s.stepActive : ''}>
-          <span className={s.stepIndex}>{i < current ? <Icon name="check" size={16} /> : i + 1}</span>
+          <span className={s.stepIndex}>{String(i + 1).padStart(2, '0')}</span>
           {label}
         </li>
       ))}

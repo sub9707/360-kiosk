@@ -37,10 +37,10 @@ export default function Result() {
       actions={
         st.phase === 'error' ? (
           <>
-            <Button size="xl" variant="secondary" icon="home" onClick={goHome}>
+            <Button size="xl" variant="secondary" onClick={goHome}>
               처음으로
             </Button>
-            <Button size="xl" icon="refresh" onClick={sessionActions.commit} primaryHotkey>
+            <Button size="xl" onClick={sessionActions.commit} primaryHotkey>
               다시 시도
             </Button>
           </>
@@ -48,7 +48,7 @@ export default function Result() {
           <Button
             size="xl"
             variant={st.phase === 'done' ? 'primary' : 'secondary'}
-            icon="home"
+           
             onClick={goHome}
             primaryHotkey={st.phase === 'done'}
           >
@@ -76,7 +76,6 @@ export default function Result() {
             <Done url={st.shareUrl} onTimeout={goHome} st={st} />
           ) : st.phase === 'error' ? (
             <div className={s.errorBox}>
-              <Icon name="alert" size={40} />
               <div>
                 <strong>완성하지 못했어요</strong>
                 <p>{st.error}</p>
@@ -97,7 +96,7 @@ function Processing({ st }: { st: SessionState }) {
   const total = rendering ? st.renderProgress * 0.6 : 0.6 + st.uploadProgress * 0.4;
   return (
     <div className={s.processing}>
-      <ProgressRing value={total} size={260} stroke={12}>
+      <ProgressRing value={total} size={240} stroke={5}>
         <span className={s.percent}>{Math.round(total * 100)}%</span>
       </ProgressRing>
       <div className={s.steps}>
@@ -148,7 +147,7 @@ function Done({ url, onTimeout, st }: { url: string; onTimeout: () => void; st: 
     <div className={s.done}>
       <div className={s.qr} dangerouslySetInnerHTML={{ __html: svg }} />
       <div className={s.doneText}>
-        <h2>완성되었어요!</h2>
+        <h2>완성되었어요</h2>
         <p>
           스마트폰 카메라로 QR 코드를 스캔해
           <br />

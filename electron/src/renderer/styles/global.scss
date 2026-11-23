@@ -1,26 +1,26 @@
 // ───────────────── Design tokens ─────────────────
 :root {
-  --bg: #0a0a0c;
-  --bg-elev: #141418;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-strong: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.12);
-  --text: #f5f5f7;
-  --text-dim: rgba(245, 245, 247, 0.64);
-  --text-faint: rgba(245, 245, 247, 0.4);
+  --bg: #0e0e0d;
+  --bg-elev: #171716;
+  --surface: #1c1c1a;
+  --surface-strong: #262624;
+  --border: #2e2e2b;
+  --border-strong: #45453f;
+  --text: #f3f1ec;
+  --text-dim: #a8a59c;
+  --text-faint: #6e6c65;
 
   --accent: #ffd23f;
-  --accent-strong: #ffc400;
+  --accent-strong: #f5c518;
   --accent-ink: #1a1400;
-  --accent-glow: rgba(255, 210, 63, 0.35);
 
-  --ok: #34d399;
-  --warn: #fbbf24;
-  --danger: #f43f5e;
+  --ok: #5cc69a;
+  --warn: #e8b64c;
+  --danger: #e5484d;
 
-  --radius-sm: 14px;
-  --radius: 24px;
-  --radius-lg: 40px;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
   --pill: 999px;
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -81,7 +81,7 @@ video {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -112,7 +112,7 @@ video {
 }
 
 .page-enter {
-  animation: fade-up 0.6s var(--ease) both;
+  animation: fade-up 0.4s var(--ease) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

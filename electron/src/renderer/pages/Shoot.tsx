@@ -59,7 +59,7 @@ function Stage({ st }: { st: SessionState }) {
           <div className={s.rec}>
             <span className={s.recDot} /> REC
           </div>
-          <ProgressRing value={elapsed / st.recordSeconds} size={560} stroke={18} tone="danger">
+          <ProgressRing value={elapsed / st.recordSeconds} size={560} stroke={6} tone="danger">
             <span className={s.bigNumber}>{st.secondsLeft}</span>
             <span className={s.unit}>초 남음</span>
           </ProgressRing>
@@ -71,7 +71,7 @@ function Stage({ st }: { st: SessionState }) {
     case 'transferring':
       return (
         <div className={`${s.center} page-enter`} key="transfer">
-          <ProgressRing value={st.transferProgress} size={420} indeterminate={st.transferProgress === 0}>
+          <ProgressRing value={st.transferProgress} size={400} stroke={6} indeterminate={st.transferProgress === 0}>
             <span className={s.midNumber}>{Math.round(st.transferProgress * 100)}%</span>
           </ProgressRing>
           <h2 className={s.heading}>영상을 가져오는 중</h2>
@@ -110,9 +110,6 @@ function Stage({ st }: { st: SessionState }) {
       }
       return (
         <div className={`${s.center} page-enter`} key="error">
-          <div className={s.errorIcon}>
-            <Icon name="alert" size={72} />
-          </div>
           <h2 className={s.heading}>문제가 발생했어요</h2>
           <p className={s.errorText}>{st.error}</p>
         </div>
@@ -123,9 +120,7 @@ function Stage({ st }: { st: SessionState }) {
       if (st.camera !== 'connected') {
         return (
           <div className={`${s.center} page-enter`} key="connecting">
-            <ProgressRing value={0} size={300} indeterminate stroke={10}>
-              <Icon name="camera" size={72} />
-            </ProgressRing>
+            <ProgressRing value={0} size={220} indeterminate stroke={4} />
             <h2 className={s.heading}>카메라 연결 중</h2>
             <p className={s.hint}>{st.cameraMessage || '촬영 기기와 연결하고 있습니다'}</p>
           </div>
@@ -133,14 +128,12 @@ function Stage({ st }: { st: SessionState }) {
       }
       return (
         <div className={`${s.center} page-enter`} key="ready">
-          <div className={s.readyOrb}>
-            <Icon name="rotate" size={140} strokeWidth={1.2} />
-          </div>
+          <div className={s.readyMark}>{st.recordSeconds}<small>초</small></div>
           <h2 className={s.heading}>준비되셨나요?</h2>
           <p className={s.hint}>
             원판 중앙에 서서 버튼을 눌러 주세요
             <br />
-            {st.recordSeconds}초 동안 360° 회전하며 촬영합니다
+            카메라가 한 바퀴 돌며 촬영합니다
           </p>
           {st.error && (
             <p className={s.error}>
@@ -158,7 +151,6 @@ function Actions({ st, onCommit }: { st: SessionState; onCommit: () => void }) {
       return (
         <Button
           size="xl"
-          icon="camera"
           onClick={sessionActions.start}
           disabled={st.camera !== 'connected'}
           primaryHotkey
@@ -169,7 +161,7 @@ function Actions({ st, onCommit }: { st: SessionState; onCommit: () => void }) {
     case 'countdown':
     case 'recording':
       return (
-        <Button size="lg" variant="secondary" icon="stop" onClick={sessionActions.stop}>
+        <Button size="lg" variant="secondary" onClick={sessionActions.stop}>
           {st.phase === 'countdown' ? '취소' : '촬영 중지'}
         </Button>
       );
@@ -177,11 +169,11 @@ function Actions({ st, onCommit }: { st: SessionState; onCommit: () => void }) {
     case 'error':
       return (
         <>
-          <Button size="xl" variant="secondary" icon="refresh" onClick={sessionActions.retake}>
+          <Button size="xl" variant="secondary" onClick={sessionActions.retake}>
             다시 찍기
           </Button>
           {st.rawUrl && !(st.error && st.phase === 'review') && (
-            <Button size="xl" icon="arrowRight" onClick={onCommit} primaryHotkey>
+            <Button size="xl" onClick={onCommit} primaryHotkey>
               완성
             </Button>
           )}

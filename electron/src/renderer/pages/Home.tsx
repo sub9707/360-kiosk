@@ -30,14 +30,13 @@ export default function Home() {
       </header>
 
       <main className={`${s.hero} page-enter`}>
-        <p className={s.eyebrow}>360° SPIN CAMERA</p>
         <h1 className={s.title}>
           나만의 360° 영상을
           <br />
           지금 만들어 보세요
         </h1>
         <p className={s.sub}>원판 위에 올라선 뒤 아래 버튼을 눌러 주세요</p>
-        <Button size="xl" icon="camera" onClick={start} primaryHotkey className={s.cta}>
+        <Button size="xl" onClick={start} primaryHotkey className={s.cta}>
           촬영 시작
         </Button>
       </main>

@@ -13,11 +13,9 @@
   min-height: 0;
   max-height: 940px;
   aspect-ratio: 9 / 16;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   overflow: hidden;
   background: #000;
-  border: 1px solid var(--border);
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
 }
 
 .video {
@@ -32,11 +30,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 40px 44px;
   border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(20px);
 }
 
 // ───────── processing ─────────
@@ -86,21 +82,17 @@
 .stepIcon {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.08);
 
   .done & {
-    background: rgba(52, 211, 153, 0.18);
     color: var(--ok);
   }
 }
 
 .bar {
-  height: 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 4px;
+  background: var(--surface-strong);
   overflow: hidden;
 
   span {
@@ -125,10 +117,9 @@
   width: 300px;
   height: 300px;
   flex-shrink: 0;
-  padding: 22px;
+  padding: 20px;
   border-radius: var(--radius);
   background: #fff;
-  box-shadow: 0 0 0 8px rgba(255, 210, 63, 0.25), 0 20px 60px rgba(0, 0, 0, 0.4);
 
   svg {
     width: 100%;
@@ -142,7 +133,7 @@
     margin: 0 0 16px;
     font-size: 48px;
     letter-spacing: -0.03em;
-    color: var(--accent);
+    color: var(--text);
   }
   p {
     margin: 0 0 24px;
@@ -160,7 +151,8 @@
   display: flex;
   gap: 24px;
   align-items: flex-start;
-  color: var(--danger);
+  padding-left: 24px;
+  border-left: 3px solid var(--danger);
 
   strong {
     display: block;

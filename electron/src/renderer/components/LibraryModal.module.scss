@@ -8,9 +8,9 @@
 
 .chip {
   flex-shrink: 0;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: var(--pill);
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   border: 1px solid var(--border);
   font-size: 16px;
@@ -23,21 +23,14 @@
   em {
     font-style: normal;
     font-size: 13px;
-    padding: 2px 8px;
-    border-radius: var(--pill);
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-faint);
   }
 }
 
 .chipActive {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+  border-color: var(--text);
+  color: var(--text);
   font-weight: 700;
-
-  em {
-    background: rgba(0, 0, 0, 0.12);
-  }
 }
 
 .grid {
@@ -53,7 +46,7 @@
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
-  transition: transform 0.2s var(--ease), border-color 0.2s;
+  transition: border-color 0.15s;
 
   img {
     width: 100%;
@@ -62,8 +55,7 @@
   }
 
   &:hover {
-    transform: translateY(-3px);
-    border-color: var(--accent);
+    border-color: var(--text-dim);
   }
 }
 
@@ -101,7 +93,7 @@
 }
 
 .error {
-  color: #fda4af;
+  color: var(--danger);
 }
 
 .check {
