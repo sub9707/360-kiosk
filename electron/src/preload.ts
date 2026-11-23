@@ -39,6 +39,7 @@ const api: KioskApi = {
     folders: () => ipcRenderer.invoke('library:folders'),
     videos: (folder) => ipcRenderer.invoke('library:videos', folder),
     remove: (folder, name, alsoRemote) => ipcRenderer.invoke('library:remove', folder, name, alsoRemote),
+    share: (folder, name, upload) => ipcRenderer.invoke('library:share', folder, name, upload),
     openFolder: (folder) => ipcRenderer.send('library:openFolder', folder),
   },
   app: {

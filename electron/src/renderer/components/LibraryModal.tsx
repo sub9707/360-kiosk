@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { LibraryFolder, LibraryVideo } from '../../shared/types';
 import { Icon } from './Icon';
+import { QrCode } from './QrCode';
 import s from './LibraryModal.module.scss';
 import { Button, Modal } from './ui';
 
@@ -81,9 +82,22 @@ function Viewer({
   const [confirm, setConfirm] = useState(false);
   const [alsoRemote, setAlsoRemote] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [remoteKey, setRemoteKey] = useState(video.remoteKey);
+  const [qr, setQr] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+
+  const share = async () => {
+    setSharing(true);
+    setError(null);
+    const res = await window.kiosk.library.share(video.folder, video.name, !remoteKey);
+    setSharing(false);
+    if (!res.ok || !res.data) return setError(res.error ?? 'QR 링크를 만들지 못했습니다');
+    setRemoteKey((k) => k ?? 'uploaded');
+    setQr(res.data);
+  };
 
   const remove = async () => {
-    const res = await window.kiosk.library.remove(video.folder, video.name, alsoRemote && !!video.remoteKey);
+    const res = await window.kiosk.library.remove(video.folder, video.name, alsoRemote && !!remoteKey);
     if (res.ok) onDeleted(video);
     else setError(res.error ?? '삭제 실패');
   };
@@ -96,7 +110,7 @@ function Viewer({
       footer={
         confirm ? (
           <>
-            {video.remoteKey && (
+            {remoteKey && (
               <label className={s.check}>
                 <input type="checkbox" checked={alsoRemote} onChange={(e) => setAlsoRemote(e.target.checked)} />
                 R2 클라우드에서도 삭제 (QR 링크 무효화)
@@ -110,15 +124,33 @@ function Viewer({
             </Button>
           </>
         ) : (
-          <Button size="md" variant="danger" icon="trash" onClick={() => setConfirm(true)}>
-            영상 삭제
-          </Button>
+          <>
+            <Button size="md" variant="danger" icon="trash" onClick={() => setConfirm(true)} className={s.left}>
+              영상 삭제
+            </Button>
+            {qr ? (
+              <Button size="md" variant="secondary" onClick={() => setQr(null)}>
+                영상 보기
+              </Button>
+            ) : (
+              <Button size="md" onClick={share} disabled={sharing}>
+                {sharing ? (remoteKey ? '링크 만드는 중…' : '업로드 중…') : remoteKey ? 'QR 코드' : '업로드 후 QR'}
+              </Button>
+            )}
+          </>
         )
       }
     >
-      <video src={video.url} controls autoPlay className={s.player} />
+      {qr ? (
+        <div className={s.qrView}>
+          <QrCode url={qr} className={s.qr} />
+          <p>스마트폰 카메라로 스캔하면 영상을 다시 받을 수 있습니다</p>
+        </div>
+      ) : (
+        <video src={video.url} controls autoPlay className={s.player} />
+      )}
       <p className={s.info}>
-        {(video.size / 1024 / 1024).toFixed(1)}MB · {video.remoteKey ? '클라우드 업로드됨' : '로컬에만 저장됨'}
+        {(video.size / 1024 / 1024).toFixed(1)}MB · {remoteKey ? '클라우드 업로드됨' : '로컬에만 저장됨'}
       </p>
       {error && <p className={s.error}>{error}</p>}
     </Modal>

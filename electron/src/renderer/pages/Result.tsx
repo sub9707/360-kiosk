@@ -1,8 +1,8 @@
-import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SessionState } from '../../shared/types';
 import { Icon } from '../components/Icon';
+import { QrCode } from '../components/QrCode';
 import { Shell } from '../components/Shell';
 import { Button, ProgressRing } from '../components/ui';
 import { sessionActions, useSession } from '../hooks/useSession';
@@ -122,17 +122,7 @@ function StepRow({ label, value, active }: { label: string; value: number; activ
 }
 
 function Done({ url, onTimeout, st }: { url: string; onTimeout: () => void; st: SessionState }) {
-  const [svg, setSvg] = useState('');
   const [left, setLeft] = useState(AUTO_HOME_SECONDS);
-
-  useEffect(() => {
-    QRCode.toString(url, {
-      type: 'svg',
-      margin: 0,
-      errorCorrectionLevel: 'M',
-      color: { dark: '#0a0a0c', light: '#ffffff' },
-    }).then(setSvg);
-  }, [url]);
 
   useEffect(() => {
     const t = setInterval(() => setLeft((v) => v - 1), 1000);
@@ -145,7 +135,7 @@ function Done({ url, onTimeout, st }: { url: string; onTimeout: () => void; st: 
 
   return (
     <div className={s.done}>
-      <div className={s.qr} dangerouslySetInnerHTML={{ __html: svg }} />
+      <QrCode url={url} className={s.qr} />
       <div className={s.doneText}>
         <h2>완성되었어요</h2>
         <p>

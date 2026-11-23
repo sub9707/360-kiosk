@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AppInfo, Result, SettingsImport, SettingsPatch } from '../shared/types';
 import { config, isStorageConfigured } from './config';
-import { listFolders, listVideos, removeVideo } from './library';
+import { listFolders, listVideos, removeVideo, shareVideo } from './library';
 import { runNetworkTest } from './nettest';
 import { readSettingsFile, settingsTemplate } from './settings-file';
 import type { Session } from './session';
@@ -94,6 +94,9 @@ export function registerIpc(session: Session) {
   ipcMain.handle('library:videos', (_e, folder: string) => listVideos(folder));
   ipcMain.handle('library:remove', (_e, folder: string, name: string, alsoRemote: boolean) =>
     removeVideo(folder, name, alsoRemote),
+  );
+  ipcMain.handle('library:share', (_e, folder: string, name: string, upload: boolean) =>
+    shareVideo(folder, name, upload),
   );
   ipcMain.on('library:openFolder', (_e, folder?: string) => {
     const base = config().get().saveDir;

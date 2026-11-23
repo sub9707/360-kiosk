@@ -167,6 +167,8 @@ export interface KioskApi {
     folders(): Promise<LibraryFolder[]>;
     videos(folder: string): Promise<LibraryVideo[]>;
     remove(folder: string, name: string, alsoRemote: boolean): Promise<Result>;
+    /** QR 용 공유 링크 (upload=true 면 미업로드 영상을 지금 업로드) */
+    share(folder: string, name: string, upload: boolean): Promise<Result<string>>;
     openFolder(folder?: string): void;
   };
   app: {

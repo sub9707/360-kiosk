@@ -374,7 +374,7 @@ export function metaPath(video: string) {
   return path.join(path.dirname(video), '.meta', path.basename(video) + '.json');
 }
 
-async function writeMeta(video: string, meta: VideoMeta) {
+export async function writeMeta(video: string, meta: VideoMeta) {
   const file = metaPath(video);
   await fs.promises.mkdir(path.dirname(file), { recursive: true });
   await fs.promises.writeFile(file, JSON.stringify(meta));
