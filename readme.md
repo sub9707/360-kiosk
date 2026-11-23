@@ -42,9 +42,6 @@ flowchart LR
   <tr>
     <td align="center"><img src="docs/images/screens/v2-home.png" alt="홈" width="220"/><br/><b>홈</b></td>
     <td align="center"><img src="docs/images/screens/v2-recording.png" alt="촬영 중" width="220"/><br/><b>촬영 중</b></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/images/screens/v2-review.png" alt="확인" width="220"/><br/><b>확인 (미리보기)</b></td>
     <td align="center"><img src="docs/images/screens/v2-settings.png" alt="설정" width="220"/><br/><b>관리자 설정</b></td>
   </tr>
 </table>
