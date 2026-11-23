@@ -1,29 +1,20 @@
 @font-face {
   font-family: 'NanumBarunGothic';
-  src: url('../assets/fonts/NanumBarunGothicUltraLight.ttf') format('truetype');
-  font-weight: 200;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'NanumBarunGothic';
   src: url('../assets/fonts/NanumBarunGothicLight.ttf') format('truetype');
   font-weight: 300;
-  font-style: normal;
+  font-display: swap;
 }
 
-/* NanumBarunGothic - Regular */
 @font-face {
   font-family: 'NanumBarunGothic';
   src: url('../assets/fonts/NanumBarunGothic.ttf') format('truetype');
   font-weight: 400;
-  font-style: normal;
+  font-display: swap;
 }
 
-/* NanumBarunGothic - Bold */
 @font-face {
   font-family: 'NanumBarunGothic';
   src: url('../assets/fonts/NanumBarunGothicBold.ttf') format('truetype');
   font-weight: 700;
-  font-style: normal;
+  font-display: swap;
 }

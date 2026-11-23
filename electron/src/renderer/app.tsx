@@ -1,19 +1,18 @@
-import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
+import { useHotkey } from './hooks/useHotkey';
 import Home from './pages/Home';
-import Film from './pages/Film';
-import QRPage from './pages/QRPage';
+import Result from './pages/Result';
+import Shoot from './pages/Shoot';
 
-const App: React.FC = () => {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/film" element={<Film />} />
-                <Route path="/result" element={<QRPage />} />
-            </Routes>
-        </Router>
-    );
-};
-
-export default App;
+export default function App() {
+  useHotkey('PageUp');
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/shoot" element={<Shoot />} />
+        <Route path="/result" element={<Result />} />
+      </Routes>
+    </HashRouter>
+  );
+}

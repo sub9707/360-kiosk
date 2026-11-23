@@ -1,0 +1,208 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  > :last-child {
+    flex-shrink: 0;
+  }
+}
+
+.desc {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--text-dim);
+}
+
+.overall {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+
+  strong {
+    font-size: 18px;
+  }
+  span {
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+}
+
+.o_best {
+  background: rgba(255, 210, 63, 0.1);
+  border-color: rgba(255, 210, 63, 0.4);
+  strong {
+    color: var(--accent);
+  }
+}
+.o_recommended {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.35);
+  strong {
+    color: var(--ok);
+  }
+}
+.o_concern {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.35);
+  strong {
+    color: #fda4af;
+  }
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.2s;
+}
+
+.dim {
+  opacity: 0.4;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.estimate {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.note {
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.noteWarn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #fda4af;
+}
+
+// ───────── 우려 · 권장 · 최고 막대 ─────────
+.meter {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 4px;
+}
+
+.seg {
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+
+  &:first-child {
+    border-radius: var(--pill) 4px 4px var(--pill);
+  }
+  &:last-child {
+    border-radius: 4px var(--pill) var(--pill) 4px;
+  }
+}
+
+.concern {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+}
+.recommended {
+  background: var(--ok);
+  color: #04261b;
+  font-weight: 700;
+}
+.best {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.time {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.elapsed {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.slow {
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+  font-size: 14px;
+  line-height: 1.6;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  strong {
+    color: var(--text);
+  }
+  ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+}

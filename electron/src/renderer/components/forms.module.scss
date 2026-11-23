@@ -1,0 +1,221 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+
+  .field {
+    flex: 1;
+  }
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+
+  span {
+    font-size: 15px;
+    color: var(--text-dim);
+  }
+
+  input,
+  select {
+    height: 52px;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    font-size: 18px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+
+    &:focus {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.07);
+    }
+    &[readonly] {
+      color: var(--text-dim);
+    }
+  }
+
+  select option {
+    background: var(--bg-elev);
+  }
+}
+
+.note {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-faint);
+}
+
+.badge {
+  height: 32px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--pill);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.badgeOk {
+  background: rgba(52, 211, 153, 0.14);
+  color: var(--ok);
+}
+.badgeWarn {
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--warn);
+}
+
+.ok {
+  color: var(--ok);
+  font-size: 16px;
+  align-self: center;
+}
+.err {
+  color: #fda4af;
+  font-size: 16px;
+  align-self: center;
+  word-break: break-all;
+}
+
+.version {
+  margin-right: auto;
+  align-self: center;
+  color: var(--text-faint);
+  font-size: 15px;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+}
+
+.switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: var(--pill);
+  background: var(--surface-strong);
+  transition: background 0.2s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s var(--ease);
+  }
+
+  input:checked + & {
+    background: var(--accent);
+    &::after {
+      transform: translateX(22px);
+    }
+  }
+}
+
+// ───────── 설정 파일 불러오기 ─────────
+.toolbar {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 12px 0 4px;
+  padding: 18px 20px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 210, 63, 0.08);
+  border: 1px solid rgba(255, 210, 63, 0.3);
+  animation: fade-in 0.2s ease both;
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  code {
+    font-size: 14px;
+    color: var(--text-dim);
+    word-break: break-all;
+  }
+  > :last-child {
+    flex-shrink: 0;
+  }
+}
+
+.bannerError {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+}
+
+.bannerSub {
+  color: var(--text-dim);
+  font-size: 14px !important;
+}
+
+.bannerWarn {
+  color: var(--warn);
+  font-size: 14px !important;
+}
+
+// 불러왔지만 아직 저장하지 않은 입력칸
+.filled {
+  span::after {
+    content: ' · 저장 전';
+    color: var(--accent);
+  }
+  input {
+    border-color: rgba(255, 210, 63, 0.6) !important;
+    background: rgba(255, 210, 63, 0.06) !important;
+  }
+}

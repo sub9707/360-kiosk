@@ -10,12 +10,8 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    extraResource: [
-      './src/exe/ffmpeg/ffmpeg.exe', ,
-      './.env',
-      './credentials.json',
-      './src/renderer/assets'
-    ]
+    // 런타임에 main 프로세스가 직접 읽는 파일 (FFmpeg, 인트로/아웃트로/BGM)
+    extraResource: ['./src/exe/ffmpeg/ffmpeg.exe', './src/renderer/assets'],
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],

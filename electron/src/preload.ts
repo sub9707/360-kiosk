@@ -1,75 +1,49 @@
-// src/preload.ts
-import { ipcRenderer } from 'electron';
-import path from 'path';
+// contextIsolation 환경에서 renderer 에 타입이 지정된 API 만 노출한다.
+import { contextBridge, ipcRenderer } from 'electron';
+import type { KioskApi, SessionState } from './shared/types';
 
-console.log('🔧 [Preload] Preload script starting (contextIsolation: false mode)...');
-
-declare global {
-  interface Window {
-    electron: {
-      ipcRenderer: {
-        invoke: (channel: string, ...args: any[]) => Promise<any>;
-        send: (channel: string, ...args: any[]) => void;
-        on: (channel: string, listener: (...args: any[]) => void) => void;
-        once: (channel: string, listener: (...args: any[]) => void) => void;
-        removeListener: (channel: string, listener: (...args: any[]) => void) => void;
-        removeAllListeners: (channel: string) => void;
-      };
-      getEnvConfig: () => Promise<any>;
-      getLogoPath: () => string;
-    };
-  }
-}
-
-try {
-  (window as any).electron = {
-    ipcRenderer: {
-      invoke: (channel: string, ...args: any[]) => {
-        console.log(`🔧 [Preload] IPC invoke: ${channel}`, args);
-        return ipcRenderer.invoke(channel, ...args);
-      },
-      send: (channel: string, ...args: any[]) => {
-        console.log(`🔧 [Preload] IPC send: ${channel}`, args);
-        ipcRenderer.send(channel, ...args);
-      },
-      on: (channel: string, listener: (...args: any[]) => void) => {
-        console.log(`🔧 [Preload] IPC on: ${channel}`);
-        ipcRenderer.on(channel, (event, ...args) => listener(...args));
-      },
-      once: (channel: string, listener: (...args: any[]) => void) => {
-        console.log(`🔧 [Preload] IPC once: ${channel}`);
-        ipcRenderer.once(channel, (event, ...args) => listener(...args));
-      },
-      removeListener: (channel: string, listener: (...args: any[]) => void) => {
-        ipcRenderer.removeListener(channel, listener);
-      },
-      removeAllListeners: (channel: string) => {
-        ipcRenderer.removeAllListeners(channel);
-      }
+const api: KioskApi = {
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    importFile: () => ipcRenderer.invoke('settings:importFile'),
+    exportTemplate: () => ipcRenderer.invoke('settings:exportTemplate'),
+    update: (patch) => ipcRenderer.invoke('settings:update', patch),
+    pickSaveDir: () => ipcRenderer.invoke('settings:pickSaveDir'),
+    testStorage: () => ipcRenderer.invoke('settings:testStorage'),
+    info: () => ipcRenderer.invoke('settings:info'),
+    redetectEncoder: () => ipcRenderer.invoke('settings:redetectEncoder'),
+  },
+  session: {
+    get: () => ipcRenderer.invoke('session:get'),
+    connect: () => ipcRenderer.send('session:connect'),
+    start: () => ipcRenderer.send('session:start'),
+    stop: () => ipcRenderer.send('session:stop'),
+    retake: () => ipcRenderer.send('session:retake'),
+    commit: () => ipcRenderer.send('session:commit'),
+    reset: () => ipcRenderer.send('session:reset'),
+    onState: (cb) => {
+      const listener = (_e: unknown, s: SessionState) => cb(s);
+      ipcRenderer.on('session:state', listener);
+      return () => ipcRenderer.removeListener('session:state', listener);
     },
-    getEnvConfig: () => {
-      console.log('🔧 [Preload] getEnvConfig called');
-      return ipcRenderer.invoke('get-env-config');
+  },
+  network: {
+    test: () => ipcRenderer.invoke('network:test'),
+    onProgress: (cb) => {
+      const listener = (_e: unknown, step: string) => cb(step);
+      ipcRenderer.on('network:progress', listener);
+      return () => ipcRenderer.removeListener('network:progress', listener);
     },
-    getLogoPath: () => {
-      const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+  },
+  library: {
+    folders: () => ipcRenderer.invoke('library:folders'),
+    videos: (folder) => ipcRenderer.invoke('library:videos', folder),
+    remove: (folder, name, alsoRemote) => ipcRenderer.invoke('library:remove', folder, name, alsoRemote),
+    openFolder: (folder) => ipcRenderer.send('library:openFolder', folder),
+  },
+  app: {
+    quit: () => ipcRenderer.send('app:quit'),
+  },
+};
 
-      if (isDev) {
-        // 개발 모드: src/renderer/assets 경로
-        return `file://${path.join(__dirname, '../renderer/assets/images/logo.png').replace(/\\/g, '/')}`;
-      } else {
-        // 배포 모드: resources/assets/images/logo.png
-        const logoPath = path.join(process.resourcesPath, 'assets', 'images', 'logo.png');
-        return `file://${logoPath.replace(/\\/g, '/')}`;
-      }
-    }
-  };
-
-  console.log('✅ [Preload] window.electron successfully assigned (contextIsolation: false)');
-} catch (error) {
-  console.error('❌ [Preload] Failed to assign window.electron:', error);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ [Preload] DOM loaded, window.electron available:', !!(window as any).electron);
-});
+contextBridge.exposeInMainWorld('kiosk', api);
