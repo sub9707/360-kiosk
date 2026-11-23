@@ -52,7 +52,12 @@ class CameraXManager(private val context: Context, private val lifecycleOwner: L
     // 🎬 20초 타이머 관련 변수
     private var recordingTimer: Handler? = null
     private var recordingRunnable: Runnable? = null
-    private val RECORDING_DURATION_MS = 20 * 1000L // 20초
+    private val DEFAULT_RECORDING_DURATION_MS = 20 * 1000L // PC 가 길이를 지정하지 않은 경우(구버전 호환)
+    private var recordingDurationMs = DEFAULT_RECORDING_DURATION_MS
+
+    // 최종 결과물은 PC 에서 8Mbps 이하로 재인코딩되므로 원본을 과도하게 높은 비트레이트로 찍을 필요가 없다.
+    // (기기 기본 FHD ≈ 16~20Mbps → 10Mbps: 전송 시간 약 40~50% 단축, 재인코딩 화질 영향 미미)
+    private val TARGET_VIDEO_BITRATE = 10_000_000
 
     // 📁 Scoped Storage 호환 저장 경로
     private val VIDEO_SAVE_DIR = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -124,6 +129,7 @@ class CameraXManager(private val context: Context, private val lifecycleOwner: L
                 // Recorder (for video capture)
                 val recorder = Recorder.Builder()
                     .setQualitySelector(QualitySelector.from(Quality.FHD))
+                    .setTargetVideoEncodingBitRate(TARGET_VIDEO_BITRATE)
                     .build()
                 videoCapture = VideoCapture.withOutput(recorder)
 
@@ -174,8 +180,11 @@ class CameraXManager(private val context: Context, private val lifecycleOwner: L
         }, 3000)
     }
 
-    @SuppressLint("MissingPermission")
-    fun startRecording() {
+    /**
+     * @param durationMs PC 가 지정한 녹화 길이. null 이면 기본 20초.
+     */
+    fun startRecording(durationMs: Long? = null) {
+        recordingDurationMs = durationMs?.takeIf { it in 3_000L..60_000L } ?: DEFAULT_RECORDING_DURATION_MS
         if (!isCameraInitialized) {
             Log.e(TAG, "❌ Camera not initialized. Cannot start recording.")
             return
@@ -214,7 +223,7 @@ class CameraXManager(private val context: Context, private val lifecycleOwner: L
                 context,
                 fileOutputOptions
             )
-                ?.withAudioEnabled()
+                // 오디오는 편집 시 BGM 으로 대체되므로 녹음하지 않는다 (파일 크기·인코딩 부하 감소)
                 ?.start(ContextCompat.getMainExecutor(context)) { recordEvent: VideoRecordEvent ->
                     handleRecordingEvent(recordEvent, fileName, videoFile)
                 }
@@ -328,10 +337,10 @@ class CameraXManager(private val context: Context, private val lifecycleOwner: L
     private fun startRecordingTimer() {
         recordingTimer = Handler(Looper.getMainLooper())
         recordingRunnable = Runnable {
-            Log.d(TAG, "🎬 20초 타이머 완료 - 자동으로 녹화 중지")
+            Log.d(TAG, "🎬 ${recordingDurationMs}ms 타이머 완료 - 자동으로 녹화 중지")
             stopRecording()
         }
-        recordingTimer?.postDelayed(recordingRunnable!!, RECORDING_DURATION_MS)
+        recordingTimer?.postDelayed(recordingRunnable!!, recordingDurationMs)
     }
 
     /**

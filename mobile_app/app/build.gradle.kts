@@ -11,8 +11,8 @@ android {
         applicationId = "com.howdoyoudo.camera_360"
         minSdk = 24 // Android 7.0 Nougat
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

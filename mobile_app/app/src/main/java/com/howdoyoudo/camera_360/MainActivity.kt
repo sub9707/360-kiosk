@@ -124,13 +124,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             // 🚀 IPC 명령 처리
-            IPCService.cameraCommandCallback = { command, _ ->
+            IPCService.cameraCommandCallback = { command, arg ->
                 runOnUiThread {
                     when (command) {
                         "start" -> {
                             if (isAppInForeground) {
                                 Log.d(TAG, "🎬 PC에서 녹화 시작 명령 수신")
-                                cameraXManager.startRecording()
+                                cameraXManager.startRecording(arg?.toLongOrNull())
                                 viewBinding.recordingStatusTextView.text = "🎬 PC 제어로 촬영 중..."
                                 cameraViewModel.updateRecordingStatus(true)
                             } else {

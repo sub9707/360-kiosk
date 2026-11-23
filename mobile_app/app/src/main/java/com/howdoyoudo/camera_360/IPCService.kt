@@ -120,7 +120,7 @@ class IPCService : Service() {
                 try {
                     val json = JSONObject(message)
                     val channel = json.getString("channel")
-                    val payload = json.getJSONObject("payload")
+                    val payload = json.optJSONObject("payload") ?: JSONObject()
 
                     Log.d(TAG, "📨 PC로부터 메시지: $channel")
 
@@ -134,7 +134,8 @@ class IPCService : Service() {
 
                         "startRecording" -> {
                             Log.d(TAG, "🎬 녹화 시작 명령 수신")
-                            cameraCommandCallback?.invoke("start", null)
+                            val durationMs = payload.optLong("durationMs", 0L)
+                            cameraCommandCallback?.invoke("start", if (durationMs > 0) durationMs.toString() else null)
                         }
 
                         "stopRecording" -> {
@@ -171,6 +172,9 @@ class IPCService : Service() {
             }
         }
 
+        // 작은 제어 메시지가 Nagle 알고리즘으로 지연되지 않도록 즉시 전송
+        webSocketServer?.isTcpNoDelay = true
+        webSocketServer?.isReuseAddr = true
         webSocketServer?.start()
     }
 
