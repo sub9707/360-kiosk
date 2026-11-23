@@ -21,7 +21,8 @@ const HTTP_PORT = 8081;
 
 /** 판정 기준. higher=true 면 값이 클수록 좋음 */
 const THRESHOLDS = {
-  lanLatencyMs: { best: 10, recommended: 50, higher: false },
+  // 폰↔PC 는 제어 신호만 오가므로 지연보다 전송 속도가 중요. 안드로이드 Wi-Fi 절전으로 수십 ms 는 흔함
+  lanLatencyMs: { best: 20, recommended: 100, higher: false },
   lanMbps: { best: 150, recommended: 50, higher: true },
   r2LatencyMs: { best: 150, recommended: 400, higher: false },
   r2Mbps: { best: 50, recommended: 15, higher: true },
@@ -272,7 +273,7 @@ async function checkLanLatency(ip: string, signal: AbortSignal): Promise<NetChec
       g === 'concern'
         ? failed
           ? '요청 일부가 실패했습니다. Wi-Fi 신호와 공유기 상태를 확인하세요.'
-          : '응답이 느립니다. 공유기와의 거리, 같은 채널을 쓰는 주변 Wi-Fi 혼잡을 확인하세요.'
+          : '응답이 매우 느립니다. 폰의 Wi-Fi 절전 설정, 공유기와의 거리, 주변 Wi-Fi 혼잡을 확인하세요.'
         : undefined,
   };
 }
