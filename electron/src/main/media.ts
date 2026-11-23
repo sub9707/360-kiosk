@@ -7,6 +7,7 @@ import { protocol } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import { BRAND_ASSETS, brandPath } from './branding';
 import { config } from './config';
 import { ensureThumbnail } from './video';
 
@@ -32,7 +33,22 @@ function isInside(file: string, dir: string) {
   return !!rel && !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
-const MIME: Record<string, string> = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.png': 'image/png' };
+const MIME: Record<string, string> = {
+  '.mp4': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+};
 
 async function serveFile(file: string, req: Request): Promise<Response> {
   const stat = await fs.promises.stat(file).catch(() => null);
@@ -67,6 +83,12 @@ export function handleMediaProtocol() {
   protocol.handle(SCHEME, async (req) => {
     try {
       const url = new URL(req.url);
+      // 브랜딩 리소스: kiosk-media://brand/<logo|intro|outro|bgm> (경로를 받지 않고 종류로만 조회)
+      if (url.host === 'brand') {
+        const kind = url.pathname.replace(/^\//, '') as (typeof BRAND_ASSETS)[number];
+        if (!BRAND_ASSETS.includes(kind)) return new Response('not found', { status: 404 });
+        return serveFile(brandPath(kind), req);
+      }
       const file = decodeURIComponent(url.pathname.replace(/^\//, ''));
       // 저장 폴더 밖의 파일은 제공하지 않는다
       if (!isInside(file, config().get().saveDir)) return new Response('forbidden', { status: 403 });

@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import logo from '../assets/images/logo.png';
+import defaultLogo from '../assets/images/logo.png';
+import { useBranding } from '../hooks/useBranding';
 import s from './Brand.module.scss';
 
 export function Logo() {
-  return <img src={logo} alt="HOWDOYOUDO" className={s.logo} draggable={false} />;
+  const logo = useBranding()?.find((a) => a.kind === 'logo');
+  // 사용자 로고가 없으면 번들된 기본 로고 (불러오는 동안에도 기본 로고 표시)
+  const src = logo?.custom && logo.url ? logo.url : defaultLogo;
+  return <img src={src} alt="HOWDOYOUDO" className={s.logo} draggable={false} />;
 }
 
 export function Copyright() {

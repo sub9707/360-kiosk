@@ -35,6 +35,11 @@ const api: KioskApi = {
       return () => ipcRenderer.removeListener('network:progress', listener);
     },
   },
+  branding: {
+    list: () => ipcRenderer.invoke('branding:list'),
+    pick: (kind) => ipcRenderer.invoke('branding:pick', kind),
+    reset: (kind) => ipcRenderer.invoke('branding:reset', kind),
+  },
   library: {
     folders: () => ipcRenderer.invoke('library:folders'),
     videos: (folder) => ipcRenderer.invoke('library:videos', folder),

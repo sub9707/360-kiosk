@@ -30,6 +30,21 @@ export interface Settings {
 
 export type SettingsPatch = Partial<Omit<Settings, 'r2'>> & { r2?: Partial<R2Settings> };
 
+export type BrandAsset = 'logo' | 'intro' | 'outro' | 'bgm';
+
+export interface BrandAssetInfo {
+  kind: BrandAsset;
+  label: string;
+  /** 사용자 지정 파일 사용 중 */
+  custom: boolean;
+  /** 원본 파일 이름 또는 '기본' */
+  name: string;
+  /** 미리보기 주소 (kiosk-media://brand/...) */
+  url: string | null;
+  /** 영상/음악 길이(초) */
+  duration?: number;
+}
+
 export interface AppInfo {
   version: string;
   activeEncoder: EncoderId | null;
@@ -162,6 +177,12 @@ export interface KioskApi {
     test(): Promise<NetTestResult>;
     /** 진행 중인 단계 이름 구독 */
     onProgress(cb: (step: string) => void): () => void;
+  };
+  branding: {
+    list(): Promise<BrandAssetInfo[]>;
+    /** 파일 선택 후 적용. 취소 시 null */
+    pick(kind: BrandAsset): Promise<Result | null>;
+    reset(kind: BrandAsset): Promise<void>;
   };
   library: {
     folders(): Promise<LibraryFolder[]>;

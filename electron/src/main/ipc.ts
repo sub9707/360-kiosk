@@ -2,7 +2,8 @@
 import { app, dialog, ipcMain, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AppInfo, Result, SettingsImport, SettingsPatch } from '../shared/types';
+import type { AppInfo, BrandAsset, Result, SettingsImport, SettingsPatch } from '../shared/types';
+import { brandInfo, pickBrandAsset, resetBrandAsset } from './branding';
 import { config, isStorageConfigured } from './config';
 import { listFolders, listVideos, removeVideo, shareVideo } from './library';
 import { runNetworkTest } from './nettest';
@@ -88,6 +89,11 @@ export function registerIpc(session: Session) {
   ipcMain.on('session:retake', () => session.retake());
   ipcMain.on('session:commit', () => void session.commit());
   ipcMain.on('session:reset', () => session.reset());
+
+  // branding
+  ipcMain.handle('branding:list', () => brandInfo());
+  ipcMain.handle('branding:pick', (_e, kind: BrandAsset) => pickBrandAsset(kind));
+  ipcMain.handle('branding:reset', (_e, kind: BrandAsset) => resetBrandAsset(kind));
 
   // library
   ipcMain.handle('library:folders', () => listFolders());

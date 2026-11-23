@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AppInfo, EncoderSetting, EncodePreset, LinkMode, R2Settings, SettingsImport } from '../../shared/types';
 import { useSession } from '../hooks/useSession';
 import { useSettings } from '../hooks/useSettings';
+import BrandingSection from './BrandingSection';
 import NetworkTest from './NetworkTest';
 import { Button, CameraPill, Modal } from './ui';
 import s from './forms.module.scss';
@@ -259,6 +260,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           </Button>
         </div>
       </section>
+
+      <BrandingSection />
 
       <section className={s.section}>
         <div className={s.sectionHead}>

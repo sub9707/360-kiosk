@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { EncodePreset, EncoderId } from '../shared/types';
 import { config } from './config';
+import { brandPath } from './branding';
 import { paths } from './paths';
 
 // ───────────────────────── 편집 구성 ─────────────────────────
@@ -88,12 +89,19 @@ function runFfmpeg(args: string[], opts: RunOptions = {}): Promise<string> {
 
 // ───────────────────────── 미디어 정보 ─────────────────────────
 
-const durationCache = new Map<string, number>();
+export interface MediaInfo {
+  duration: number;
+  video: boolean;
+  audio: boolean;
+}
 
-async function probeDuration(file: string): Promise<number> {
+const mediaCache = new Map<string, MediaInfo>();
+
+/** 길이와 영상/오디오 스트림 유무 */
+export async function probeMedia(file: string): Promise<MediaInfo> {
   const stat = fs.statSync(file);
   const key = `${file}|${stat.size}|${stat.mtimeMs}`;
-  const hit = durationCache.get(key);
+  const hit = mediaCache.get(key);
   if (hit) return hit;
   // ffmpeg -i 는 출력 지정이 없으므로 항상 실패 코드로 끝난다 → stderr 만 파싱
   const stderr = await new Promise<string>((resolve) => {
@@ -105,9 +113,17 @@ async function probeDuration(file: string): Promise<number> {
   });
   const m = stderr.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/);
   if (!m) throw new Error(`길이를 확인할 수 없습니다: ${path.basename(file)}`);
-  const sec = +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]);
-  durationCache.set(key, sec);
-  return sec;
+  const info: MediaInfo = {
+    duration: +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]),
+    video: /Stream #.*: Video:/.test(stderr),
+    audio: /Stream #.*: Audio:/.test(stderr),
+  };
+  mediaCache.set(key, info);
+  return info;
+}
+
+async function probeDuration(file: string): Promise<number> {
+  return (await probeMedia(file)).duration;
 }
 
 // ───────────────────────── 인코더 ─────────────────────────
@@ -257,10 +273,11 @@ async function renderWith(enc: EncoderId, opts: RenderOptions, total: number) {
   const tmp = opts.output + '.part.mp4';
   const args = [
     '-progress', 'pipe:1', '-nostats',
-    '-i', paths.intro(),
+    '-i', brandPath('intro'),
     '-ss', String(WINDOW_START), '-t', String(WINDOW_END - WINDOW_START), '-i', opts.input,
-    '-i', paths.outro(),
-    '-i', paths.bgm(),
+    '-i', brandPath('outro'),
+    // 배경음악이 영상보다 짧으면 반복 (atrim 으로 최종 길이에 맞춰 자름)
+    '-stream_loop', '-1', '-i', brandPath('bgm'),
     '-filter_complex', buildFilterGraph(total),
     '-map', '[outv]', '-map', '[bgm]',
     ...encoderArgs(enc, preset),
@@ -292,10 +309,10 @@ async function renderWith(enc: EncoderId, opts: RenderOptions, total: number) {
 
 export async function renderEdit(opts: RenderOptions): Promise<{ encoder: EncoderId; ms: number }> {
   const t0 = Date.now();
-  for (const f of [paths.intro(), paths.outro(), paths.bgm(), paths.ffmpeg()]) {
+  for (const f of [brandPath('intro'), brandPath('outro'), brandPath('bgm'), paths.ffmpeg()]) {
     if (!fs.existsSync(f)) throw new Error(`필수 파일이 없습니다: ${f}`);
   }
-  const [introLen, outroLen] = await Promise.all([probeDuration(paths.intro()), probeDuration(paths.outro())]);
+  const [introLen, outroLen] = await Promise.all([probeDuration(brandPath('intro')), probeDuration(brandPath('outro'))]);
   const total = introLen + MAIN_DURATION + outroLen;
 
   let enc = await resolveEncoder();
