@@ -32,7 +32,7 @@ flowchart LR
 2. 폰이 18초 녹화 후 PC로 원본 전송
 3. PC가 바로 편집을 시작하고, 그동안 원본 미리보기를 보여 줌 → **완성** 또는 **다시 찍기**
 4. 편집 영상을 R2에 업로드 → 화면에 QR 표시
-5. 참여자가 QR로 영상 열람·저장. 120초 뒤 자동으로 처음 화면으로
+5. 참여자가 QR로 영상 열람, 저장. 120초 뒤 자동으로 처음 화면으로
 
 영상은 PC의 저장 폴더에도 날짜별로 남습니다.
 
@@ -54,6 +54,8 @@ npm install
 npm start           # 개발 모드
 npm run make        # 설치 파일 빌드
 ```
+
+FFmpeg 실행 파일은 용량이 커서 저장소에 넣지 않았습니다. [FFmpeg Windows 빌드](https://www.gyan.dev/ffmpeg/builds/)에서 받은 `ffmpeg.exe`를 `electron/src/exe/ffmpeg/ffmpeg.exe`에 두고 실행합니다.
 
 안드로이드 앱은 `mobile_app/`을 Android Studio로 열어 빌드합니다.
 

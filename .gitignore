@@ -4,3 +4,17 @@ node_modules
 # 서명 키
 *.jks
 *.keystore
+*credentials*.json
+
+# 빌드 산출물
+*.apk
+*.aab
+mobile_app/app/release/
+
+# IDE, 로그
+.idea/
+.kotlin/
+*.log
+
+# FFmpeg 실행 파일 (README 참고해 직접 받아 둠)
+electron/src/exe/
